@@ -219,7 +219,7 @@ class InnerTab1Content(ctk.CTkFrame):
             globals()[f"Enable_Inspection_{i}"] = int(inspection_values[0])
 
             # Imprimir el valor de inspection_values[0]
-            print(f"Inspection {i} value: {inspection_values[0]}")
+            #print(f"Inspection {i} value: {inspection_values[0]}")
 
             if globals()[f"Enable_Inspection_{i}"] != 0:
                 self.toggle_buttons[f"Zone{i}"][0].pack(pady=5)

@@ -15,7 +15,8 @@ class Inherit:
 
     SelectionFilter=""
     Inspection1="0,0,0,0,0"
-    Inspection2="0,0,0,0,0"
+    #In this moment i need only one Inspection zone
+    #Inspection2="0,0,0,0,0"
 
 
 

@@ -1,5 +1,8 @@
 import customtkinter as ctk
-from  .InnerTab2 import InnerTab1Content,InnerTab2Content
+from  .InnerTab2 import (ContorInnerTab1,
+                         IAInner1,
+                         InnerTab1Content,
+                         InnerTab2Content)
 from Global.GlobalV import Inherit
 '''
 
@@ -28,8 +31,8 @@ class Tab2Content(ctk.CTkFrame):
         self.inner_tab1 = self.inner_tab_control.add("Image history")
         self.inner_tab2 = self.inner_tab_control.add("Training")
 
-        inner_tab1_content = InnerTab1Content(self.inner_tab1, self.Filter)
+        inner_tab1_content = ContorInnerTab1(self.inner_tab1, self.Filter)
         inner_tab1_content.pack(fill="both", expand=True)
 
-        inner_tab1_content = InnerTab2Content(self.inner_tab2)
-        inner_tab1_content.pack(fill="both", expand=True)
+        #inner_tab1_content = InnerTab2Content(self.inner_tab2)
+        #inner_tab1_content.pack(fill="both", expand=True)

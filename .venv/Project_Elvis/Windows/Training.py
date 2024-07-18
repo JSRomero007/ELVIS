@@ -10,23 +10,23 @@ class TrainingModelForm(ctk.CTkFrame):
         self.configure(bg_color="white", fg_color="white")
         self.saved_image_path = Img.Master
 
-        self.filters = ["GrayScale", "RedVision", "HighlightShadow", "OnlyLines", "FrontLines", "Negative"]
+        self.filters = ["Original","GrayScale", "RedVision", "HighlightShadow", "OnlyLines", "FrontLines", "Negative"]
         self.main_camera = None  # Añadir una referencia para MainCamera
         self.MainTabview()
 
     def MainTabview(self):
         # Create the Tabview Control
-        main_tab_control = ctk.CTkTabview(self, fg_color="white", bg_color="white", corner_radius=10)
-        main_tab_control.pack(padx=10, pady=10, fill="both", expand=True)
+        self.main_tab_control = ctk.CTkTabview(self, fg_color="white", bg_color="white", corner_radius=10)
+        self.main_tab_control.pack(padx=10, pady=10, fill="both", expand=True)
 
         # Display 4 options
-        self.tab1 = main_tab_control.add(" Step 1 ")
-        self.tab2 = main_tab_control.add(" Step 2 ")
-        self.tab3 = main_tab_control.add(" Step 3 ")
-        self.tab4 = main_tab_control.add(" Step 4 ")
+        self.tab1 = self.main_tab_control.add(" Step 1 ")
+        self.tab2 = self.main_tab_control.add(" Step 2 ")
+        self.tab3 = self.main_tab_control.add(" Step 3 ")
+        self.tab4 = self.main_tab_control.add(" Step 4 ")
 
         # Agregar el contenido de la pestaña 1 desde el archivo tab1_content.py
-        tab1_content = Tab1Content(self.tab1, self.saved_image_path, MainCamera, self.filters)
+        tab1_content = Tab1Content(self.tab1, self.saved_image_path, MainCamera, self.filters,self.main_tab_control)
         tab1_content.pack(fill="both", expand=True)
 
         # Guardar referencia de MainCamera

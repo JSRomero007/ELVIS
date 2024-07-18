@@ -112,12 +112,3 @@ class InnerTab2Content(ctk.CTkFrame):
     def get_inspection_zone(self, image, x, y, width, height):
         return image[y:y+height, x:x+width]
 
-# Crear la aplicación principal
-app = ctk.CTk()
-app.geometry("800x800")
-
-# Crear y agregar el contenido de la pestaña interna
-inner_tab_content = InnerTab2Content(app)
-inner_tab_content.pack(fill="both", expand=True)
-
-app.mainloop()

@@ -11,6 +11,8 @@ class Effects:
 
     def apply_effects(self, frame):
         for effect in self.effects:
+            if effect == "Original":
+                continue
             if effect == "GrayScale":
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)

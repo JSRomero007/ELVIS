@@ -5,14 +5,15 @@ from Global.GlobalV import Inherit
 
 
 class InnerTab2Content(ctk.CTkFrame):
-    def __init__(self, parent, filters, inner_tab_control,main_camera_class):
+    def __init__(self, parent, filters, inner_tab_control, main_camera_class):
         super().__init__(parent)
-        self.filters = filters
+        self.filters = [f for f in filters if f not in ["RedVision", "HighlightShadow"]]  # Filtrar los filtros no deseados
         self.main_camera_class = main_camera_class
         self.grid_frame = None
         self.main_camera = None  # Inicializar main_camera
         self.inner_tab_control = inner_tab_control
         self.create_content()
+
 
     def StartCamera(self):
         if self.main_camera:

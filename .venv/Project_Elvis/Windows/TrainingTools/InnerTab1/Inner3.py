@@ -7,9 +7,11 @@ from Global.GlobalV import Inherit,Img
 
 
 class InnerTab3Content(ctk.CTkFrame):
-    def __init__(self, parent):
+    def __init__(self, parent,TabView,inner_tab_control):
         super().__init__(parent, fg_color="white")
         self.parent = parent
+        self.inner_tab_control= inner_tab_control
+        self.NextMotherTabContro=TabView
         self.current_filter = Inherit.SelectionFilter
         self.Camera=Img.Camera
         self.ImgWid=Img.ImgWidth
@@ -22,7 +24,7 @@ class InnerTab3Content(ctk.CTkFrame):
         self.image_path = "C:\\Users\\y80txk\\Pictures\\ELVIS\\captured_image.jpg"
         self.last_modified = 0
 
-        self.inspection_areas = [{'enabled': False, 'coords': (0, 0, 0, 0), 'width': 0, 'height': 0}] * 2
+        self.inspection_areas = [{'enabled': False, 'coords': (0, 0, 0, 0), 'width': 0, 'height': 0}]
 
         self.image_frame = ctk.CTkFrame(self, fg_color="white", border_width=0)
         self.image_frame.pack(side=ctk.LEFT, padx=0, pady=0)
@@ -47,29 +49,23 @@ class InnerTab3Content(ctk.CTkFrame):
         self.selected_area = ctk.StringVar(value="Inspection 1")
         self.inspection_vars = [
             {'enabled': ctk.IntVar(), 'start_x': ctk.StringVar(), 'start_y': ctk.StringVar(), 'size_x': ctk.StringVar(),
-             'size_y': ctk.StringVar()},
-            {'enabled': ctk.IntVar(), 'start_x': ctk.StringVar(), 'start_y': ctk.StringVar(), 'size_x': ctk.StringVar(),
              'size_y': ctk.StringVar()}
         ]
         self.InspectionControls()
 
     #Get the coordinates Inspection 1 & Inspection 2 and save in GlobalV
     def SaveDataInspection(self):
-        for i, inspection in enumerate(self.inspection_vars):
-            enabled = inspection['enabled'].get()
-            start_x = inspection['start_x'].get()
-            start_y = inspection['start_y'].get()
-            size_x = inspection['size_x'].get()
-            size_y = inspection['size_y'].get()
+        enabled = self.inspection_vars[0]['enabled'].get()
+        start_x = self.inspection_vars[0]['start_x'].get()
+        start_y = self.inspection_vars[0]['start_y'].get()
+        size_x = self.inspection_vars[0]['size_x'].get()
+        size_y = self.inspection_vars[0]['size_y'].get()
 
-            data_string = ",".join([str(enabled), start_x, start_y, size_x, size_y])
+        data_string = ",".join([str(enabled), start_x, start_y, size_x, size_y])
+        Inherit.Inspection1 = data_string
 
-            if i == 0:
-                Inherit.Inspection1 = data_string
-            elif i == 1:
-                Inherit.Inspection2 = data_string
     def InspectionControls(self):
-        for i in range(2):
+        for i in range(1):
             frame = ctk.CTkFrame(self.button_panel,fg_color="white",border_color="Gray",border_width=1)
             title_label = ctk.CTkLabel(self.button_panel, text=f"Inspection {i+1}")
             title_label.pack(anchor="n", padx=10, pady=(5, 0))
@@ -117,10 +113,25 @@ class InnerTab3Content(ctk.CTkFrame):
             self.inspection_vars[i]['size_y_entry'] = size_y_entry
 
         self.UpdateInspectionVar()
+        self.SelectionGrid = ctk.CTkFrame(self.button_panel,fg_color="white",bg_color="white")
+        self.SelectionGrid.pack( padx=10,pady=20)
 
-        ctk.CTkLabel(self.button_panel, text="Countorn", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT, padx=5)
-        ctk.CTkSwitch(self.button_panel, text="", font=('Consolas', 14), command=lambda i=i: self.nueva_funcion_switch(i)).pack(side=ctk.LEFT, padx=5)
-        ctk.CTkLabel(self.button_panel, text="IA", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT)
+        #Contor=ctk.CTkLabel(self.SelectionGrid, text="Countorn", font=('Consolas', 14), text_color="black")
+        #Contor.grid(row=0,column=0,padx=5)
+        #self.Selector=ctk.CTkSwitch(self.SelectionGrid, text="IA", text_color="black",font=('Consolas', 14),command=self.SelectionMode)
+        #self.Selector.grid(row=0,column=1,padx=10)
+        Continue=ctk.CTkButton(self.SelectionGrid,text="Continue",text_color="black",command=self.NextStep)
+        Continue.grid(row=0,column=2,padx=10)
+
+    #def NextStep(self):
+        #self.NextMotherTabContro.set(" Step 2 ")
+    #NextMotherTabContro
+    def SelectionMode(self):
+        if self.Selector.get()==1:
+            print("Activate")
+        else:
+            print("Deactivate")
+
     def save_inspection_area(self):
         if self.shape == 'square':
             start_x, end_x = sorted([self.start_x, self.end_x])
@@ -131,7 +142,13 @@ class InnerTab3Content(ctk.CTkFrame):
 
             selected_index = int(self.selected_area.get()[-1]) - 1
 
-            self.inspection_areas[selected_index] = {'shape': self.shape, 'coords': coords, 'width': width, 'height': height,'enabled': self.inspection_vars[selected_index]['enabled'].get()}
+            self.inspection_areas[selected_index] = {'shape': self.shape, 'coords': coords, 'width': width,
+                                                     'height': height,
+                                                     'enabled': self.inspection_vars[selected_index]['enabled'].get()}
+
+            # Capturar y guardar la imagen sin filtro
+            self.capture_inspection_image(self.inspection_areas[selected_index], selected_index)
+
             self.UpdateInspectionVar()
             self.ApplyFilter()
 
@@ -189,8 +206,23 @@ class InnerTab3Content(ctk.CTkFrame):
                 img = Image.fromarray(self.frame)
                 imgtk = ImageTk.PhotoImage(image=img)
 
+                # Configurar el tamaño del canvas para que se ajuste a la imagen
                 self.canvas.config(width=new_width, height=new_height)
-                self.canvas.create_image(0, 0, anchor=ctk.NW, image=imgtk)
+                self.canvas.update_idletasks()  # Forzar la actualización del canvas para obtener sus dimensiones
+
+                # Obtener las dimensiones del canvas
+                canvas_width = self.canvas.winfo_width()
+                canvas_height = self.canvas.winfo_height()
+
+                # Calcular la posición para centrar la imagen
+                x_offset = (canvas_width - new_width) // 2
+                y_offset = (canvas_height - new_height) // 2
+
+                # Limpiar el canvas antes de dibujar la imagen centrada
+                self.canvas.delete("all")
+
+                # Crear la imagen dentro del canvas centrada
+                self.canvas.create_image(x_offset, y_offset, anchor=ctk.NW, image=imgtk)
                 self.canvas.image = imgtk
             else:
                 print(f"Error: No se pudo cargar la imagen desde {self.image_path}")
@@ -246,25 +278,26 @@ class InnerTab3Content(ctk.CTkFrame):
 
         self.update_textbox_state()
     def update_textbox_state(self):
-        for i in range(2):
-            enabled = self.inspection_vars[i]['enabled'].get() and (self.selected_area.get() == f"Inspection {i + 1}")
+        def update_textbox_state(self):
+            enabled = self.inspection_vars[0]['enabled'].get() and (self.selected_area.get() == f"Inspection 1")
             state = ctk.NORMAL if enabled else ctk.DISABLED
 
-            self.inspection_vars[i]['start_x_entry'].configure(state=state)
-            self.inspection_vars[i]['start_y_entry'].configure(state=state)
-            self.inspection_vars[i]['size_x_entry'].configure(state=state)
-            self.inspection_vars[i]['size_y_entry'].configure(state=state)
+            self.inspection_vars[0]['start_x_entry'].configure(state=state)
+            self.inspection_vars[0]['start_y_entry'].configure(state=state)
+            self.inspection_vars[0]['size_x_entry'].configure(state=state)
+            self.inspection_vars[0]['size_y_entry'].configure(state=state)
 
     # ------ Controls ------
 
         #Update Zone
     def UpdateInspectionVar(self):
-        for i, area in enumerate(self.inspection_areas):
-            self.inspection_vars[i]['start_x'].set(area['coords'][0])
-            self.inspection_vars[i]['start_y'].set(area['coords'][1])
-            self.inspection_vars[i]['size_x'].set(area['width'])
-            self.inspection_vars[i]['size_y'].set(area['height'])
+        area = self.inspection_areas[0]
+        self.inspection_vars[0]['start_x'].set(area['coords'][0])
+        self.inspection_vars[0]['start_y'].set(area['coords'][1])
+        self.inspection_vars[0]['size_x'].set(area['width'])
+        self.inspection_vars[0]['size_y'].set(area['height'])
         self.update_textbox_state()
+
     def update_position(self, index):
         try:
             start_x = int(self.inspection_vars[index]['start_x'].get())
@@ -334,6 +367,35 @@ class InnerTab3Content(ctk.CTkFrame):
         self.inspection_areas[index] = {'enabled': False, 'coords': (0, 0, 0, 0), 'width': 0, 'height': 0}
         self.UpdateInspectionVar()
         self.ApplyFilter()
+
+    def save_inspection_images(self):
+        for index, area in enumerate(self.inspection_areas):
+            if area['enabled']:
+                # Obtener la región de interés ya capturada previamente
+                x1, y1, x2, y2 = area['coords']
+                original_roi = self.frame[y1:y2, x1:x2].copy()
+
+                # Aplicar filtro y guardar imagen con filtro
+                filtered_roi = self.ApplyFilterInImage(Image.fromarray(original_roi), Inherit.SelectionFilter)
+                filtered_image_path = f"C:\\ELVIS\\con_filtro_inspeccion_{index + 1}.jpg"
+                filtered_image = np.array(filtered_roi)
+                Image.fromarray(filtered_image).save(filtered_image_path)
+
+    def capture_inspection_image(self, area, index):
+        x1, y1, x2, y2 = area['coords']
+        original_roi = self.frame[y1:y2, x1:x2].copy()
+
+        # Guardar imagen sin filtro
+        original_image_path = f"C:\\ELVIS\\sin_filtro_inspeccion_{index + 1}.jpg"
+        Image.fromarray(original_roi).save(original_image_path)
+
+        return original_roi
+
+    def NextStep(self):
+        self.inner_tab_control.set("Evaluation")
+        self.save_inspection_images()
+        #self.NextMotherTabContro.set(" Step 2 ")
+
 
 
 

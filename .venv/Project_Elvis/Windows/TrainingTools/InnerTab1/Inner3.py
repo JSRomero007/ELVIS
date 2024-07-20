@@ -3,23 +3,24 @@ import cv2
 from PIL import Image, ImageTk
 import os
 import numpy as np
-from Global.GlobalV import Inherit,Img
+from Global.GlobalV import Inherit, Img
 
 
 class InnerTab3Content(ctk.CTkFrame):
-    def __init__(self, parent,TabView,inner_tab_control):
+    def __init__(self, parent, TabView, inner_tab_control):
         super().__init__(parent, fg_color="white")
         self.parent = parent
-        self.inner_tab_control= inner_tab_control
-        self.NextMotherTabContro=TabView
+        self.inner_tab_control = inner_tab_control
+        self.NextMotherTabContro = TabView
         self.current_filter = Inherit.SelectionFilter
-        self.Camera=Img.Camera
-        self.ImgWid=Img.ImgWidth
-        self.ImgHei=Img.ImgHeidht
+        self.Camera = Img.Camera
+        self.ImgWid = Img.ImgWidth
+        self.ImgHei = Img.ImgHeidht
         self.shape = 'square'
         self.drawing = False
         self.start_x, self.start_y = 0, 0
         self.end_x, self.end_y = 0, 0
+        self.threshold_value = 127
 
         self.image_path = "C:\\Users\\y80txk\\Pictures\\ELVIS\\captured_image.jpg"
         self.last_modified = 0
@@ -32,11 +33,22 @@ class InnerTab3Content(ctk.CTkFrame):
         self.button_panel = ctk.CTkFrame(self, fg_color="white", border_width=0)
         self.button_panel.pack(side=ctk.RIGHT, padx=10, pady=10, fill="y")
 
-        self.canvas = ctk.CTkCanvas(self.image_frame, width=1280, height=720, highlightthickness=0, bg="white")
-        self.canvas.pack()
+        self.canvas = ctk.CTkCanvas(self.image_frame, width=self.ImgWid, height=self.ImgHei, highlightthickness=0,
+                                    bg="white")
+        self.canvas.pack(expand=True, fill="both")  # Ajustar para que el canvas llene el espacio disponible
 
         self.table_label = ctk.CTkLabel(self.button_panel, text="", justify="left")
         self.table_label.pack(pady=10)
+
+        self.threshold_slider = ctk.CTkSlider(self.button_panel, from_=0, to=255, number_of_steps=255, command=self.update_threshold)
+        self.threshold_slider.set(self.threshold_value)
+        self.threshold_slider.pack(pady=10)
+
+        # Agregar menú desplegable para seleccionar el filtro
+        self.filter_options = ["GrayScale", "RedVision", "HighlightShadow", "OnlyLines", "FrontLines", "Negative"]
+        self.selected_filter = ctk.StringVar(value=self.filter_options[0])
+        self.filter_menu = ctk.CTkOptionMenu(self.button_panel, variable=self.selected_filter, values=self.filter_options, command=self.update_filter)
+        self.filter_menu.pack(pady=10)
 
         self.ShowImage()
         self.UpdateImage()
@@ -53,7 +65,17 @@ class InnerTab3Content(ctk.CTkFrame):
         ]
         self.InspectionControls()
 
-    #Get the coordinates Inspection 1 & Inspection 2 and save in GlobalV
+    def update_threshold(self, value):
+        self.threshold_value = int(value)
+        Inherit.ThresholdFilter=int(value)
+        print(f"Threshold value: {Inherit.ThresholdFilter}")  # Imprimir el valor del umbral
+        self.ApplyFilter()
+
+    def update_filter(self, value):
+        Inherit.SelectionFilter = value
+        self.ApplyFilter()
+
+    # Get the coordinates Inspection 1 & Inspection 2 and save in GlobalV
     def SaveDataInspection(self):
         enabled = self.inspection_vars[0]['enabled'].get()
         start_x = self.inspection_vars[0]['start_x'].get()
@@ -66,68 +88,68 @@ class InnerTab3Content(ctk.CTkFrame):
 
     def InspectionControls(self):
         for i in range(1):
-            frame = ctk.CTkFrame(self.button_panel,fg_color="white",border_color="Gray",border_width=1)
-            title_label = ctk.CTkLabel(self.button_panel, text=f"Inspection {i+1}")
+            frame = ctk.CTkFrame(self.button_panel, fg_color="white", border_color="Gray", border_width=1)
+            title_label = ctk.CTkLabel(self.button_panel, text=f"Inspection")
             title_label.pack(anchor="n", padx=10, pady=(5, 0))
 
-            frame.pack(pady=10, fill="x",padx=10)
-            control_frame = ctk.CTkFrame(frame,fg_color="white")
-            control_frame.pack(fill="x", pady=5,padx=10)
+            frame.pack(pady=10, fill="x", padx=10)
+            control_frame = ctk.CTkFrame(frame, fg_color="white")
+            control_frame.pack(fill="x", pady=5, padx=10)
 
-            ctk.CTkRadioButton(control_frame, text=f"Inspection {i + 1}",font=('Consolas',14),text_color="black", variable=self.selected_area,
-                               value=f"Inspection {i + 1}", command=self.update_textbox_state).pack(side=ctk.LEFT,padx=10)
-            ctk.CTkSwitch(control_frame, text="Enable",font=('Consolas',14), variable=self.inspection_vars[i]['enabled'],
-                          command=lambda i=i: [self.toggle_area(i), self.update_textbox_state()]).pack(side=ctk.RIGHT,padx=10)
+            ctk.CTkRadioButton(control_frame, text=f"Inspection", font=('Consolas', 14), text_color="black",
+                               variable=self.selected_area,
+                               value=f"Inspection {i + 1}", command=self.update_textbox_state).pack(side=ctk.LEFT,
+                                                                                                    padx=10)
+            self.inspection_vars[i]['enabled'].set(1)  # Set the switch to always be active
+            # Remove the line that packs the CTkSwitch to avoid displaying it
+            # ctk.CTkSwitch(control_frame, text="Enable", font=('Consolas', 14), variable=self.inspection_vars[i]['enabled'],
+            #               command=lambda i=i: [self.toggle_area(i), self.update_textbox_state()]).pack(side=ctk.RIGHT, padx=10)
 
-            ctk.CTkLabel(frame, text="Position",font=('Consolas',14),text_color="black").pack()
-            position_frame = ctk.CTkFrame(frame,fg_color="white")
-            position_frame.pack(fill="x", pady=5,padx=10)
-            ctk.CTkLabel(position_frame, text="X",font=('Consolas',14),text_color="black").pack(side=ctk.LEFT, padx=10)
+            ctk.CTkLabel(frame, text="Position", font=('Consolas', 14), text_color="black").pack()
+            position_frame = ctk.CTkFrame(frame, fg_color="white")
+            position_frame.pack(fill="x", pady=5, padx=10)
+            ctk.CTkLabel(position_frame, text="X", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT,
+                                                                                                   padx=10)
             start_x_entry = ctk.CTkEntry(position_frame, textvariable=self.inspection_vars[i]['start_x'])
             start_x_entry.pack(side=ctk.LEFT, padx=5)
             start_x_entry.bind("<Return>", lambda event, i=i: self.update_position(i))
-            ctk.CTkLabel(position_frame, text="Y",font=('Consolas',14),text_color="black").pack(side=ctk.LEFT, padx=10)
+            ctk.CTkLabel(position_frame, text="Y", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT,
+                                                                                                   padx=10)
             start_y_entry = ctk.CTkEntry(position_frame, textvariable=self.inspection_vars[i]['start_y'])
             start_y_entry.pack(side=ctk.LEFT, padx=5)
             start_y_entry.bind("<Return>", lambda event, i=i: self.update_position(i))
 
-            ctk.CTkLabel(frame, text="Size",font=('Consolas',14),text_color="black").pack(padx=10)
-            size_frame = ctk.CTkFrame(frame,fg_color="white")
-            size_frame.pack(fill="x", pady=5,padx=10)
+            ctk.CTkLabel(frame, text="Size", font=('Consolas', 14), text_color="black").pack(padx=10)
+            size_frame = ctk.CTkFrame(frame, fg_color="white")
+            size_frame.pack(fill="x", pady=5, padx=10)
 
-            ctk.CTkLabel(size_frame, text="X",font=('Consolas',14),text_color="black").pack(side=ctk.LEFT, padx=10)
+            ctk.CTkLabel(size_frame, text="X", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT, padx=10)
             size_x_entry = ctk.CTkEntry(size_frame, textvariable=self.inspection_vars[i]['size_x'])
             size_x_entry.pack(side=ctk.LEFT, padx=5)
             size_x_entry.bind("<Return>", lambda event, i=i: self.update_size(i))
 
-            ctk.CTkLabel(size_frame, text="Y",font=('Consolas',14),text_color="black").pack(side=ctk.LEFT, padx=10)
+            ctk.CTkLabel(size_frame, text="Y", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT, padx=10)
             size_y_entry = ctk.CTkEntry(size_frame, textvariable=self.inspection_vars[i]['size_y'])
             size_y_entry.pack(side=ctk.LEFT, padx=5)
             size_y_entry.bind("<Return>", lambda event, i=i: self.update_size(i))
 
-            ctk.CTkButton(frame, text="Delete Inspection",font=('Consolas',14),text_color="black", command=lambda i=i: self.DeleteInspection(i)).pack(pady=5,padx=10)
-            ctk.CTkLabel(frame,text="Selecte Mode inspection").pack(pady=5,padx=10)
+            ctk.CTkButton(frame, text="Delete Inspection", font=('Consolas', 14), text_color="black",
+                          command=lambda i=i: self.DeleteInspection(i)).pack(pady=5, padx=10)
+            ctk.CTkLabel(frame, text="Selecte Mode inspection").pack(pady=5, padx=10)
             self.inspection_vars[i]['start_x_entry'] = start_x_entry
             self.inspection_vars[i]['start_y_entry'] = start_y_entry
             self.inspection_vars[i]['size_x_entry'] = size_x_entry
             self.inspection_vars[i]['size_y_entry'] = size_y_entry
 
         self.UpdateInspectionVar()
-        self.SelectionGrid = ctk.CTkFrame(self.button_panel,fg_color="white",bg_color="white")
-        self.SelectionGrid.pack( padx=10,pady=20)
+        self.SelectionGrid = ctk.CTkFrame(self.button_panel, fg_color="white", bg_color="white")
+        self.SelectionGrid.pack(padx=10, pady=20)
 
-        #Contor=ctk.CTkLabel(self.SelectionGrid, text="Countorn", font=('Consolas', 14), text_color="black")
-        #Contor.grid(row=0,column=0,padx=5)
-        #self.Selector=ctk.CTkSwitch(self.SelectionGrid, text="IA", text_color="black",font=('Consolas', 14),command=self.SelectionMode)
-        #self.Selector.grid(row=0,column=1,padx=10)
-        Continue=ctk.CTkButton(self.SelectionGrid,text="Continue",text_color="black",command=self.NextStep)
-        Continue.grid(row=0,column=2,padx=10)
+        Continue = ctk.CTkButton(self.SelectionGrid, text="Continue", text_color="black", command=self.NextStep)
+        Continue.grid(row=0, column=2, padx=10)
 
-    #def NextStep(self):
-        #self.NextMotherTabContro.set(" Step 2 ")
-    #NextMotherTabContro
     def SelectionMode(self):
-        if self.Selector.get()==1:
+        if self.Selector.get() == 1:
             print("Activate")
         else:
             print("Deactivate")
@@ -153,8 +175,8 @@ class InnerTab3Content(ctk.CTkFrame):
             self.ApplyFilter()
 
     # ------ Image ------
-        #Filter
-    def ApplyFilter(self):
+    # Filter
+    def ApplyFilter(self, apply_only=False):
         self.reset_image()
         if self.inspection_areas:
             for area in self.inspection_areas:
@@ -162,16 +184,30 @@ class InnerTab3Content(ctk.CTkFrame):
                     x1, y1, x2, y2 = area['coords']
                     mask = self.frame[y1:y2, x1:x2].copy()
                     if mask.size != 0:
-                        filtered_mask = self.ApplyFilterInImage(Image.fromarray(mask), Inherit.SelectionFilter)
+                        filtered_mask = self.ApplyFilterInImage(Image.fromarray(mask), Inherit.SelectionFilter,
+                                                                self.threshold_value)
                         self.frame[y1:y2, x1:x2] = np.array(filtered_mask)
-                        cv2.rectangle(self.frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                        if not apply_only:
+                            cv2.rectangle(self.frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
         self.update_frame()
-    def ApplyFilterInImage(self, image, filter_type):
+
+    def ApplyFilterWithoutDrawing(self, frame, inspection_areas, filter_type):
+        for area in inspection_areas:
+            if area['enabled']:
+                x1, y1, x2, y2 = area['coords']
+                mask = frame[y1:y2, x1:x2].copy()
+                if mask.size != 0:
+                    filtered_mask = self.ApplyFilterInImage(Image.fromarray(mask), filter_type)
+                    frame[y1:y2, x1:x2] = np.array(filtered_mask)
+        return frame
+
+    def ApplyFilterInImage(self, image, filter_type, threshold_value=127):
         frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        if filter_type == "GrayScale": #complete
+        if filter_type == "GrayScale":
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            _, frame = cv2.threshold(frame, threshold_value, 255, cv2.THRESH_BINARY)
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-        elif filter_type == "RedVision":#complete
+        elif filter_type == "RedVision":
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -179,18 +215,20 @@ class InnerTab3Content(ctk.CTkFrame):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         elif filter_type == "OnlyLines":
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frame = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+            frame = cv2.adaptiveThreshold(gray, threshold_value, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11,
+                                          2)
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
         elif filter_type == "FrontLines":
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            _, frame = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+            _, frame = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frame = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+            frame = cv2.adaptiveThreshold(gray, threshold_value, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11,
+                                          2)
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
         elif filter_type == "Negative":
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            _, frame = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+            _, frame = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
             frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
         return Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
@@ -199,7 +237,7 @@ class InnerTab3Content(ctk.CTkFrame):
             self.frame = cv2.imread(self.image_path)
             if self.frame is not None:
                 self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-                # Redimensionar la imagen a 1280x720
+                # Redimensionar la imagen a las dimensiones especificadas (ImgWid x ImgHei)
                 new_width, new_height = self.ImgWid, self.ImgHei
                 self.frame = cv2.resize(self.frame, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
 
@@ -210,19 +248,11 @@ class InnerTab3Content(ctk.CTkFrame):
                 self.canvas.config(width=new_width, height=new_height)
                 self.canvas.update_idletasks()  # Forzar la actualización del canvas para obtener sus dimensiones
 
-                # Obtener las dimensiones del canvas
-                canvas_width = self.canvas.winfo_width()
-                canvas_height = self.canvas.winfo_height()
-
-                # Calcular la posición para centrar la imagen
-                x_offset = (canvas_width - new_width) // 2
-                y_offset = (canvas_height - new_height) // 2
-
-                # Limpiar el canvas antes de dibujar la imagen centrada
+                # Limpiar el canvas antes de dibujar la imagen
                 self.canvas.delete("all")
 
                 # Crear la imagen dentro del canvas centrada
-                self.canvas.create_image(x_offset, y_offset, anchor=ctk.NW, image=imgtk)
+                self.canvas.create_image(0, 0, anchor=ctk.NW, image=imgtk)
                 self.canvas.image = imgtk
             else:
                 print(f"Error: No se pudo cargar la imagen desde {self.image_path}")
@@ -233,6 +263,7 @@ class InnerTab3Content(ctk.CTkFrame):
         for i, area in enumerate(self.inspection_areas):
             if area['enabled']:
                 self.DrawAndSaveShape(area, i + 1)
+
     def DrawShape(self):
         self.canvas.delete("shape")
         for i, area in enumerate(self.inspection_areas):
@@ -240,56 +271,57 @@ class InnerTab3Content(ctk.CTkFrame):
                 self.DrawAndSaveShape(area, i + 1)
         self.canvas.create_rectangle(self.start_x, self.start_y, self.end_x, self.end_y, outline='#FE5202', tag="shape")
         self.canvas.create_text((self.start_x + self.end_x) // 2, self.start_y - 10,
-                                text="Inspection {}".format(len(self.inspection_areas) + 1), fill="#FE5202",
+                                text="Inspection ".format(len(self.inspection_areas) + 1), fill="#FE5202",
                                 tag="shape", font=('Consolas', 15))
         width = abs(self.end_x - self.start_x)
         height = abs(self.end_y - self.start_y)
         self.canvas.create_text((self.start_x + self.end_x) // 2, (self.start_y + self.end_y) // 2,
                                 text=f"{width}x{height}", fill="red", tag="shape")
+
     def DrawAndSaveShape(self, area, index):
         self.canvas.create_rectangle(area['coords'], outline='red')
         x1, y1, x2, y2 = area['coords']
-        self.canvas.create_text((x1 + x2) // 2, y1 - 10, text="Inspection {}".format(index), fill="#FE5202",
+        self.canvas.create_text((x1 + x2) // 2, y1 - 10, text="Inspection ".format(index), fill="#FE5202",
                                 font=('Consolas', 15))
         width = abs(x2 - x1)
         height = abs(y2 - y1)
         self.canvas.create_text((x1 + x2) // 2, (y1 + y2) // 2, text=f"{width}x{height}", fill="#FE5202",
                                 font=('Consolas', 15))
 
-    #----- Mouse ------
+    # ----- Mouse ------
     def MouseDown(self, event):
         if self.inspection_areas[int(self.selected_area.get()[-1]) - 1]['enabled']:
             self.drawing = True
             self.start_x, self.start_y = event.x, event.y
+
     def MouseMove(self, event):
         if self.drawing:
             self.end_x, self.end_y = event.x, event.y
             self.DrawShape()
+
     def MouseUp(self, event):
         self.drawing = False
         self.save_inspection_area()
 
-
     # ------ Controllers ------
 
     def toggle_area(self, index):
-        self.inspection_areas[index]['enabled'] = bool(self.inspection_vars[index]['enabled'].get())
+        self.inspection_areas[index]['enabled'] = True
         self.ApplyFilter()
-
         self.update_textbox_state()
-    def update_textbox_state(self):
-        def update_textbox_state(self):
-            enabled = self.inspection_vars[0]['enabled'].get() and (self.selected_area.get() == f"Inspection 1")
-            state = ctk.NORMAL if enabled else ctk.DISABLED
 
-            self.inspection_vars[0]['start_x_entry'].configure(state=state)
-            self.inspection_vars[0]['start_y_entry'].configure(state=state)
-            self.inspection_vars[0]['size_x_entry'].configure(state=state)
-            self.inspection_vars[0]['size_y_entry'].configure(state=state)
+    def update_textbox_state(self):
+        enabled = self.inspection_vars[0]['enabled'].get() and (self.selected_area.get() == f"Inspection 1")
+        state = ctk.NORMAL if enabled else ctk.DISABLED
+
+        self.inspection_vars[0]['start_x_entry'].configure(state=state)
+        self.inspection_vars[0]['start_y_entry'].configure(state=state)
+        self.inspection_vars[0]['size_x_entry'].configure(state=state)
+        self.inspection_vars[0]['size_y_entry'].configure(state=state)
 
     # ------ Controls ------
 
-        #Update Zone
+    # Update Zone
     def UpdateInspectionVar(self):
         area = self.inspection_areas[0]
         self.inspection_vars[0]['start_x'].set(area['coords'][0])
@@ -314,6 +346,7 @@ class InnerTab3Content(ctk.CTkFrame):
 
         except ValueError:
             print("Error: Valores de coordenadas inválidos")
+
     def update_size(self, index):
         try:
             size_x = int(self.inspection_vars[index]['size_x'].get())
@@ -330,9 +363,9 @@ class InnerTab3Content(ctk.CTkFrame):
 
             self.ApplyFilter()
 
-
         except ValueError:
             print("Error: Valores de tamaño inválidos")
+
     def UpdateImage(self):
         try:
             modified_time = os.path.getmtime(self.image_path)
@@ -344,12 +377,14 @@ class InnerTab3Content(ctk.CTkFrame):
             print(f"Error al actualizar la imagen: {e}")
 
         self.after(500, self.UpdateImage)
+
     def UpdateFilter(self):
         if self.current_filter != Inherit.SelectionFilter:
             self.current_filter = Inherit.SelectionFilter
             self.ApplyFilter()
 
         self.after(500, self.UpdateFilter)
+
     def update_frame(self):
         self.SaveDataInspection()
         img = Image.fromarray(self.frame)
@@ -357,12 +392,13 @@ class InnerTab3Content(ctk.CTkFrame):
         self.canvas.create_image(0, 0, anchor=ctk.NW, image=imgtk)
         self.canvas.image = imgtk
         self.DrawShapes()
-        #Reset Zone
+
+    # Reset Zone
     def reset_image(self):
         self.ShowImage()
         self.DrawShapes()
 
-        #Delete Zone
+    # Delete Zone
     def DeleteInspection(self, index):
         self.inspection_areas[index] = {'enabled': False, 'coords': (0, 0, 0, 0), 'width': 0, 'height': 0}
         self.UpdateInspectionVar()
@@ -375,11 +411,21 @@ class InnerTab3Content(ctk.CTkFrame):
                 x1, y1, x2, y2 = area['coords']
                 original_roi = self.frame[y1:y2, x1:x2].copy()
 
-                # Aplicar filtro y guardar imagen con filtro
-                filtered_roi = self.ApplyFilterInImage(Image.fromarray(original_roi), Inherit.SelectionFilter)
+                # Aplicar filtro sin dibujar el marco ni la zona de inspección
+                filtered_frame = self.ApplyFilterWithoutDrawing(self.frame.copy(), self.inspection_areas,
+                                                                Inherit.SelectionFilter)
+                filtered_roi = filtered_frame[y1:y2, x1:x2]
+
+                # Recortar 5 píxeles de cada borde
+                if filtered_roi.shape[0] > 10 and filtered_roi.shape[
+                    1] > 10:  # Asegurarse de que el recorte no sea mayor que la imagen
+                    cropped_filtered_roi = filtered_roi[2:-2, 2:-2]
+                else:
+                    cropped_filtered_roi = filtered_roi  # No recortar si la imagen es demasiado pequeña
+
+                # Guardar imagen con filtro y recortada
                 filtered_image_path = f"C:\\ELVIS\\con_filtro_inspeccion_{index + 1}.jpg"
-                filtered_image = np.array(filtered_roi)
-                Image.fromarray(filtered_image).save(filtered_image_path)
+                Image.fromarray(cropped_filtered_roi).save(filtered_image_path)
 
     def capture_inspection_image(self, area, index):
         x1, y1, x2, y2 = area['coords']
@@ -394,8 +440,4 @@ class InnerTab3Content(ctk.CTkFrame):
     def NextStep(self):
         self.inner_tab_control.set("Evaluation")
         self.save_inspection_images()
-        #self.NextMotherTabContro.set(" Step 2 ")
-
-
-
-
+        # self.NextMotherTabContro.set(" Step 2 ")

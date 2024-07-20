@@ -356,7 +356,7 @@ class InnerTab1Content(ctk.CTkFrame):
         self.main_camera.capture_image()
         if self.main_camera:
             self.main_camera.stop_camera()
-        self.inner_tab_control.set("Select the filter")
+        self.inner_tab_control.set("Select inspection area")
 
     def Button_Cancel(self):
         print("cancel")

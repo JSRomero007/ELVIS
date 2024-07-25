@@ -21,7 +21,7 @@ class InnerTab3Content(ctk.CTkFrame):
         self.start_x, self.start_y = 0, 0
         self.end_x, self.end_y = 0, 0
         self.threshold_value = 127
-
+        self.contours_image_path = "C:\\ELVIS\\contornos_inspeccion.jpg"
         self.image_path = "C:\\Users\\y80txk\\Pictures\\ELVIS\\captured_image.jpg"
         self.last_modified = 0
 
@@ -409,35 +409,60 @@ class InnerTab3Content(ctk.CTkFrame):
             if area['enabled']:
                 # Obtener la región de interés ya capturada previamente
                 x1, y1, x2, y2 = area['coords']
-                original_roi = self.frame[y1:y2, x1:x2].copy()
+                if x1 < x2 and y1 < y2:  # Verificar que las coordenadas sean válidas
+                    original_roi = self.frame[y1:y2, x1:x2].copy()
+                    if original_roi.size > 0:  # Verificar que la imagen no esté vacía
 
-                # Aplicar filtro sin dibujar el marco ni la zona de inspección
-                filtered_frame = self.ApplyFilterWithoutDrawing(self.frame.copy(), self.inspection_areas,
-                                                                Inherit.SelectionFilter)
-                filtered_roi = filtered_frame[y1:y2, x1:x2]
+                        # Guardar imagen sin filtro
+                        original_image_path = f"C:\\ELVIS\\NotFilter_{index + 1}.jpg"
+                        Image.fromarray(original_roi).save(original_image_path)
 
-                # Recortar 5 píxeles de cada borde
-                if filtered_roi.shape[0] > 10 and filtered_roi.shape[
-                    1] > 10:  # Asegurarse de que el recorte no sea mayor que la imagen
-                    cropped_filtered_roi = filtered_roi[2:-2, 2:-2]
+                        # Aplicar filtro sin dibujar el marco ni la zona de inspección
+                        filtered_frame = self.ApplyFilterWithoutDrawing(self.frame.copy(), self.inspection_areas,
+                                                                        Inherit.SelectionFilter)
+                        filtered_roi = filtered_frame[y1:y2, x1:x2]
+
+                        # Recortar 5 píxeles de cada borde
+                        if filtered_roi.shape[0] > 10 and filtered_roi.shape[
+                            1] > 10:  # Asegurarse de que el recorte no sea mayor que la imagen
+                            cropped_filtered_roi = filtered_roi[2:-2, 2:-2]
+                        else:
+                            cropped_filtered_roi = filtered_roi  # No recortar si la imagen es demasiado pequeña
+
+                        # Guardar imagen con filtro y recortada
+                        filtered_image_path = f"C:\\ELVIS\\WithFilter_{index + 1}.jpg"
+                        Image.fromarray(cropped_filtered_roi).save(filtered_image_path)
+
+                        # Extraer y guardar contornos de la imagen con filtro
+                        gray_filtered = cv2.cvtColor(cropped_filtered_roi, cv2.COLOR_BGR2GRAY)
+                        _, thresh = cv2.threshold(gray_filtered, 127, 255, cv2.THRESH_BINARY)
+                        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                        contour_image = np.zeros_like(cropped_filtered_roi)
+                        cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 1)
+                        Image.fromarray(contour_image).save(self.contours_image_path)
+
+                    else:
+                        print(f"Error: La región de interés original está vacía para el área {index + 1}")
                 else:
-                    cropped_filtered_roi = filtered_roi  # No recortar si la imagen es demasiado pequeña
-
-                # Guardar imagen con filtro y recortada
-                filtered_image_path = f"C:\\ELVIS\\con_filtro_inspeccion_{index + 1}.jpg"
-                Image.fromarray(cropped_filtered_roi).save(filtered_image_path)
+                    print(f"Error: Coordenadas no válidas para el área {index + 1}")
 
     def capture_inspection_image(self, area, index):
         x1, y1, x2, y2 = area['coords']
-        original_roi = self.frame[y1:y2, x1:x2].copy()
-
-        # Guardar imagen sin filtro
-        original_image_path = f"C:\\ELVIS\\sin_filtro_inspeccion_{index + 1}.jpg"
-        Image.fromarray(original_roi).save(original_image_path)
-
-        return original_roi
+        if x1 < x2 and y1 < y2:  # Verificar que las coordenadas sean válidas
+            original_roi = self.frame[y1:y2, x1:x2].copy()
+            if original_roi.size > 0:  # Verificar que la imagen no esté vacía
+                # Guardar imagen sin filtro
+                original_image_path = f"C:\\ELVIS\\NotFilter.jpg"
+                Image.fromarray(original_roi).save(original_image_path)
+                return original_roi
+            else:
+                print(f"Error: La región de interés original está vacía para el área {index + 1}")
+        else:
+            print(f"Error: Coordenadas no válidas para el área {index + 1}")
+        return None
 
     def NextStep(self):
-        self.inner_tab_control.set("Evaluation")
         self.save_inspection_images()
+        self.inner_tab_control.set("Evaluation")
+
         # self.NextMotherTabContro.set(" Step 2 ")

@@ -7,7 +7,7 @@ import hashlib
 import numpy as np
 import cv2
 import os
-
+from Global.GlobalV import Img
 def calculate_image_hash(image):
     image_bytes = image.tobytes()
     return hashlib.md5(image_bytes).hexdigest()
@@ -18,8 +18,7 @@ class InnerTab4Content(tk.Frame):
         super().__init__(parent, bg="white")
         self.parent = parent
 
-        self.image_path = "C:\\ELVIS\\contornos_inspeccion.jpg"
-        self.second_image_path = "C:\\ELVIS\\NotFilter.jpg"  # Ruta de la segunda imagen con nombre de archivo
+        self.EctractGlobalV()
         self.inspection_areas_data = []
         self.drawing = False
         self.start_x, self.start_y = None, None
@@ -27,9 +26,14 @@ class InnerTab4Content(tk.Frame):
         self.shape_type = tk.StringVar(value="rectangle")  # Variable para los radiobuttons
         self.inspection_areas = []
         self.current_area_index = tk.IntVar(value=-1)
+        self.show_all_shapes = tk.BooleanVar(value=True)
+
         self.setup_grid()
         self.update_image_periodically()  # Llamar a la función periódica
-
+    def EctractGlobalV(self):
+        self.image_path = Img.Contorns
+        self.second_image_path = Img.CutOriginalPicture
+        self.TempDB= Img.TempDb
     def print_inspection_areas_data(self):
         print("hola")
         for area_data in self.inspection_areas_data:
@@ -51,13 +55,19 @@ class InnerTab4Content(tk.Frame):
                 original_image_attr = 'second_original_image'
                 photo_attr = 'second_photo'
                 current_image_hash_attr = 'current_second_image_hash'
-                canvas = self.second_canvas
+                canvas_attr = 'second_canvas'
             else:
                 image_attr = 'image'
                 original_image_attr = 'original_image'
                 photo_attr = 'photo'
                 current_image_hash_attr = 'current_image_hash'
-                canvas = self.canvas
+                canvas_attr = 'canvas'
+
+            canvas = getattr(self, canvas_attr, None)
+
+            if canvas is None:
+                self.create_canvas_image(new_image_path, 2, 2 if not is_second_image else 1)
+                canvas = getattr(self, canvas_attr)
 
             # Si la imagen es diferente, actualizar la interfaz
             if not hasattr(self, current_image_hash_attr) or getattr(self, current_image_hash_attr) != new_image_hash:
@@ -83,36 +93,35 @@ class InnerTab4Content(tk.Frame):
             self.grid_columnconfigure(j, weight=1)
 
         # Fila 1, Columnas 1 a 4
-        header_label = tk.Label(self, text="Encabezado", bg="lightgray", font=("Arial", 16))
+        header_label = tk.Label(self, text="Evaluation of inspection zone", bg="white", font=("Arial", 20))
         header_label.grid(row=0, column=0, columnspan=4, sticky="nsew")
 
         # Fila 2, Cada columna con un texto
         for j in range(4):
-            label = tk.Label(self, text=f"Texto Columna {j + 1}", bg="white", font=("Arial", 12))
-            label.grid(row=1, column=j, sticky="nsew")
+            if j>1:
+                label = tk.Label(self, text=" ", bg="white", font=("Arial", 12))
+                label.grid(row=1, column=j, sticky="nsew")
+
 
         # Fila 3, Imágenes y Controles
-        self.create_canvas_image(self.image_path, 2, 2, "Contours Image")
-        self.create_canvas_image(self.second_image_path, 2, 1, "Not Filter Image")  # Añadir la segunda imagen
+        self.create_canvas_image(self.image_path, 2, 2)
+        self.create_canvas_image(self.second_image_path, 2, 1)  # Añadir la segunda imagen
 
         controls_frame = tk.Frame(self, bg="white")
         controls_frame.grid(row=2, column=3, sticky="nsew")
         self.create_controls(controls_frame)
 
         # Fila 4, Pie de página
-        footer_label = tk.Label(self, text="Pie de Página", bg="lightgray", font=("Arial", 14))
+        footer_label = tk.Label(self, text="", bg="white", font=("Arial", 14))
         footer_label.grid(row=3, column=0, columnspan=4, sticky="nsew")
 
-    def create_canvas_image(self, image_path, row, col, text):
+    def create_canvas_image(self, image_path, row, col):
         # Eliminar cualquier frame existente
         for widget in self.grid_slaves(row=row, column=col):
             widget.destroy()
 
         frame = tk.Frame(self, bg="white")
-        frame.grid(row=row, column=col, sticky="nsew")
-
-        label = tk.Label(frame, text=text, bg="white", font=("Arial", 12))
-        label.pack(side="top", fill="x")
+        frame.grid(row=row, column=col, sticky="nsew", padx=10)
 
         # Crear un frame para contener el canvas y las barras de desplazamiento
         canvas_frame = tk.Frame(frame, bg="white")
@@ -182,6 +191,10 @@ class InnerTab4Content(tk.Frame):
         self.canvas.yview(*args)
         self.second_canvas.yview(*args)
 
+    def update_max_zones_label(self):
+        current_zones = len(self.inspection_areas)
+        self.MaxZones.configure(text=f"{current_zones} to 20 zones")
+
     def sync_scroll_x(self, *args, from_canvas=None):
         if args[0] == "moveto":
             fraction = float(args[1])
@@ -198,48 +211,70 @@ class InnerTab4Content(tk.Frame):
                 self.canvas.xview_scroll(units, what)
         self.canvas.xview(*args)
         self.second_canvas.xview(*args)
+
     def create_controls(self, frame):
         controls_frame = ctk.CTkFrame(frame, fg_color="white", bg_color="white", border_color="gray", border_width=1)
         controls_frame.pack(side="top", fill="both", expand=True)
 
-        # Configurar el grid para que la columna 0 se expanda
+        # Configurar la cuadrícula en controls_frame
         controls_frame.grid_columnconfigure(0, weight=1)
         controls_frame.grid_columnconfigure(1, weight=1)
         controls_frame.grid_columnconfigure(2, weight=1)
-        controls_frame.grid_columnconfigure(3, weight=1)
 
-        titl = ctk.CTkLabel(controls_frame, text="Inspection Area", font=('Consolas', 20), text_color="black")
-        titl.grid(row=0, column=0, columnspan=4, pady=3)
 
-        self.MaxZones=ctk.CTkLabel(controls_frame,text="X to 20 zones",text_color="black",font=('Consolas',20))
+        titl = ctk.CTkLabel(controls_frame, text="- Inspections -", font=('Consolas', 20, "bold"), text_color="Gray",
+                            fg_color="white")
+        titl.grid(row=0, column=0, columnspan=4, pady=(30,10), padx=5)
+
+        self.MaxZones = ctk.CTkLabel(controls_frame, text="0 to 20 zones", text_color="black", font=('Consolas', 20))
         self.MaxZones.grid(row=1, column=1, pady=5, sticky="ew")
 
-        add_button = ctk.CTkButton(controls_frame, text="Add zone +",fg_color="white",bg_color="white",text_color="black",
+        add_button = ctk.CTkButton(controls_frame, text="Add zone +", fg_color="white", bg_color="white",
+                                   text_color="black",
                                    command=self.add_inspection_area)
-        add_button.grid(row=1, column=2, pady=5, sticky="ew")
-
+        add_button.grid(row=1, column=2, padx=5)
 
         titl = ctk.CTkLabel(controls_frame, text="Select Shape", font=("Consolas", 20), text_color="black")
-        titl.grid(row=2, column=0, columnspan=4, pady=3,padx=5)
+        titl.grid(row=2, column=0, columnspan=4, pady=(30,10), padx=5)
 
         rectangle_rb = tk.Radiobutton(controls_frame, text="Rectangle", variable=self.shape_type, value="rectangle",
                                       bg="white", font=("Arial", 12))
-        rectangle_rb.grid(row=3, column=0, pady=5,padx=5, sticky="ew")
+        rectangle_rb.grid(row=3, column=0, pady=5, padx=5, sticky="ew")
 
         circle_rb = tk.Radiobutton(controls_frame, text="Circle", variable=self.shape_type, value="circle", bg="white",
                                    font=("Arial", 12))
-        circle_rb.grid(row=3, column=1, pady=5,padx=5, sticky="ew")
+        circle_rb.grid(row=3, column=1, pady=5, padx=5, sticky="ew")
 
         oval_rb = tk.Radiobutton(controls_frame, text="Oval", variable=self.shape_type, value="oval", bg="white",
                                  font=("Arial", 12))
-        oval_rb.grid(row=3, column=2, pady=5,padx=5, sticky="ew")
+        oval_rb.grid(row=3, column=2, pady=5, padx=5, sticky="ew")
 
+        # View mode
+        titl = ctk.CTkLabel(controls_frame, text="View mode", font=("Consolas", 20), text_color="black")
+        titl.grid(row=4, column=0, columnspan=4, pady=(30,10), padx=5)
 
-        # Agregar Text con Scrollbar
+        # Crear un Frame para combinar celdas en la fila 5
+        combined_frame = ctk.CTkFrame(controls_frame, bg_color="white", fg_color="white")
+        combined_frame.grid(row=5, column=0, columnspan=4, pady=3, padx=5)
+
+        # Crear un Frame interno para centrar los elementos
+        inner_frame = ctk.CTkFrame(combined_frame, bg_color="white", fg_color="white")
+        inner_frame.pack(padx=5, pady=(10,30))
+
+        # Agregar elementos dentro del Frame interno
+        label_only_shape_1 = ctk.CTkLabel(inner_frame, text="Only shape", font=("Consolas", 20), text_color="black")
+        label_only_shape_1.pack(side="left", padx=3, pady=3)  # Alinear a la izquierda
+
+        switch_only_shape = ctk.CTkSwitch(inner_frame, text="All shapes", font=("Consolas", 20), text_color="black",
+                                          variable=self.show_all_shapes, command=self.toggle_all_shapes)
+        switch_only_shape.pack(side="left", padx=3, pady=3)  # Alinear a la izquierda
+
+        # Add and edit zones
         listbox_frame = tk.Frame(controls_frame, width=20)
-        listbox_frame.grid(row=5,rowspan=9, column=0, pady=5)
+        listbox_frame.grid(row=6, rowspan=3, column=0, pady=5, sticky="nsew")  # Ajusta el rowspan y sticky
 
-        self.text_widget = tk.Text(listbox_frame, height=6, wrap="none", width=20)
+        self.text_widget = tk.Text(listbox_frame, height=2, wrap="none",
+                                   width=20)  # Ajusta el tamaño a aproximadamente 40px de altura
         self.text_widget.pack(side="left", fill="both", expand=True)
 
         scrollbar = tk.Scrollbar(listbox_frame, orient="vertical", command=self.text_widget.yview)
@@ -247,28 +282,36 @@ class InnerTab4Content(tk.Frame):
 
         self.text_widget.config(yscrollcommand=scrollbar.set)
 
+        txt = ctk.CTkLabel(controls_frame, text="Configure Zone")
+        txt.grid(row=6, column=1, columnspan=2, pady=5,padx=5)  # Ajusta el sticky
 
-        txt=ctk.CTkLabel(controls_frame,text="Configure Zone")
-        txt.grid(row=5, column=1,columnspan=2, pady=5)
+        #Delete Zone
+        txt = ctk.CTkLabel(controls_frame, text="Delete zone:",text_color="black",font=('Consolas',15))
+        txt.grid(row=7, column=1, padx=5,pady=5)  # Ajusta el sticky
 
-
-        delete_button = ctk.CTkButton(controls_frame, text="-",fg_color="white",bg_color="white",text_color="black",
+        DeleteButton = ctk.CTkButton(controls_frame, text="-", fg_color="white", bg_color="white", text_color="black",
                                       command=self.delete_inspection_area)
-        delete_button.grid(row=6, column=2, pady=5,padx=5, sticky="ew")
+        DeleteButton.grid(row=7, column=2, pady=5, padx=5, sticky="ew")
+
+        #Rename Zone
+        txt = ctk.CTkLabel(controls_frame, text="Rename:",text_color="black",font=('Consolas',15))
+        txt.grid(row=8, column=1, padx=5,pady=5)  # Ajusta el sticky
 
         self.entry_var = tk.StringVar()
-
         self.entry = ctk.CTkEntry(controls_frame, textvariable=self.entry_var)
-        self.entry.grid(row=7, column=1, pady=5,padx=5)
+        self.entry.grid(row=8, column=2, pady=5, padx=5, sticky="ew")  # Ajusta el columnspan y sticky
         self.entry_var.trace_add("write", lambda *args: self.save_radiobutton_name())
 
 
+        # Frame adicional para los botones en la parte inferior
+        button_frame = ctk.CTkFrame(controls_frame, fg_color="white", bg_color="white")
+        button_frame.grid(row=10, column=0, columnspan=4, pady=30, padx=5, sticky="ew")
 
+        print_button = ctk.CTkButton(button_frame, text="BACK")
+        print_button.pack(side="left", padx=5)
 
-        # Agregar botón para imprimir datos
-        print_button = ctk.CTkButton(controls_frame, text="Imprimir Datos", command=self.print_inspection_areas_data)
-        print_button.grid(row=10, column=0, columnspan=3, pady=5,)
-
+        next_button = ctk.CTkButton(button_frame, text="Next step")
+        next_button.pack(side="right", padx=5)
 
     def add_inspection_area(self):
         if len(self.inspection_areas) < 20:  # Permitir hasta 20 zonas
@@ -286,8 +329,12 @@ class InnerTab4Content(tk.Frame):
 
             self.update_radio_buttons()
             self.current_area_index.set(len(self.inspection_areas) - 1)
+            self.update_max_zones_label()  # Actualizar la etiqueta
         else:
             print("No se pueden añadir más zonas. Límite alcanzado.")
+
+    def toggle_all_shapes(self):
+        self.redraw_image()  # Redraw the image and shapes based on the switch state
 
     def zoom_in(self):
         current_width, current_height = self.image.size
@@ -400,6 +447,7 @@ class InnerTab4Content(tk.Frame):
             self.current_area_index.set(-1)
             self.update_radio_buttons()
             self.redraw_image()
+            self.update_max_zones_label()  # Actualizar la etiqueta
 
 
     def update_radio_buttons(self):
@@ -456,10 +504,10 @@ class InnerTab4Content(tk.Frame):
                 self.second_shape_id = self.second_canvas.create_oval(self.start_x, self.start_y, self.start_x,
                                                                       self.start_y, outline="red")
             elif shape == "oval":
-                self.shape_id = self.canvas.create_oval(self.start_x, self.start_y, self.start_x + 50,
-                                                        self.start_y + 30, outline="red")
-                self.second_shape_id = self.second_canvas.create_oval(self.start_x, self.start_y, self.start_x + 50,
-                                                                      self.start_y + 30, outline="red")
+                self.shape_id = self.canvas.create_oval(self.start_x, self.start_y, self.start_x, self.start_y,
+                                                        outline="red")
+                self.second_shape_id = self.second_canvas.create_oval(self.start_x, self.start_y, self.start_x,
+                                                                      self.start_y, outline="red")
 
     def on_move_press(self, event):
         if self.shape_id and self.current_area_index.get() != -1:
@@ -479,8 +527,15 @@ class InnerTab4Content(tk.Frame):
                 self.second_canvas.coords(self.second_shape_id, self.start_x - radius, self.start_y - radius,
                                           self.start_x + radius, self.start_y + radius)
             elif shape == "oval":
-                self.canvas.coords(self.shape_id, self.start_x, self.start_y, cur_x, cur_y)
-                self.second_canvas.coords(self.second_shape_id, self.start_x, self.start_y, cur_x, cur_y)
+                # Calcular el centro del óvalo
+                center_x = self.start_x
+                center_y = self.start_y
+                width = abs(cur_x - center_x)
+                height = abs(cur_y - center_y)
+                self.canvas.coords(self.shape_id, center_x - width, center_y - height, center_x + width,
+                                   center_y + height)
+                self.second_canvas.coords(self.second_shape_id, center_x - width, center_y - height, center_x + width,
+                                          center_y + height)
 
     def save_inspection_area_image(self):
         def save_area(area, index):
@@ -522,7 +577,7 @@ class InnerTab4Content(tk.Frame):
                 result_image = Image.fromarray(result_image_np)
 
                 # Crear carpeta y guardar imagen
-                dir_path = os.path.join("TmpDB", f"Inspection_{index + 1}")
+                dir_path = os.path.join(self.TempDB, f"Inspection_{index + 1}")
                 os.makedirs(dir_path, exist_ok=True)
                 image_path = os.path.join(dir_path, f"Inspection_{index + 1}.png")
                 result_image.save(image_path)
@@ -610,14 +665,17 @@ class InnerTab4Content(tk.Frame):
         self.after(500, self.update_image_periodically)
 
     def redraw_image(self):
-        for canvas, photo_attr in [
-            (self.canvas, 'photo'),
-            (self.second_canvas, 'second_photo')
-        ]:
-            canvas.delete("all")  # Clear the canvas
-            canvas.create_image(0, 0, image=getattr(self, photo_attr), anchor="nw")  # Redraw the image
-            canvas.config(scrollregion=canvas.bbox(tk.ALL))  # Update scrollregion
-            self.draw_shapes()
+        if hasattr(self, 'canvas') and hasattr(self, 'second_canvas'):
+            for canvas, photo_attr in [
+                (self.canvas, 'photo'),
+                (self.second_canvas, 'second_photo')
+            ]:
+                canvas.delete("all")  # Clear the canvas
+                canvas.create_image(0, 0, image=getattr(self, photo_attr), anchor="nw")  # Redraw the image
+                canvas.config(scrollregion=canvas.bbox(tk.ALL))  # Update scrollregion
+                self.draw_shapes()
+        else:
+            print("Canvas not initialized.")
 
     def draw_shapes(self):
         for canvas, image_attr in [
@@ -631,7 +689,16 @@ class InnerTab4Content(tk.Frame):
             width_ratio = current_width / original_width
             height_ratio = current_height / original_height
 
-            for area in self.inspection_areas:
+            if self.show_all_shapes.get():
+                areas_to_draw = self.inspection_areas
+            else:
+                index = self.current_area_index.get()
+                if 0 <= index < len(self.inspection_areas):
+                    areas_to_draw = [self.inspection_areas[index]]
+                else:
+                    areas_to_draw = []
+
+            for area in areas_to_draw:
                 if area['enabled']:
                     name = area.get('name', f"Zona {self.inspection_areas.index(area) + 1}")
                     x1, y1, x2, y2 = area['coords_real']  # Usar las coordenadas reales para dibujar
@@ -649,5 +716,3 @@ class InnerTab4Content(tk.Frame):
                     canvas.create_text((x1 + x2) / 2, y1 - 10, text=name, fill="white", tag="shape")
                     canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, text=str(self.inspection_areas.index(area) + 1),
                                        fill="white", tag="shape")
-
-

@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from PIL import Image
 from customtkinter import CTkImage
-from .InnerTab1 import InnerTab1Content, InnerTab2Content, InnerTab3Content,InnerTab4Content
+from .InnerTab1 import InnerTab1Content, InnerTab2Content, InnerTab3Content,InnerTab4Content,InnerTab5Content
 
 class Tab1Content(ctk.CTkFrame):
     def __init__(self, parent, saved_image_path, main_camera_class, filters,MotherTab):
@@ -39,8 +39,8 @@ class Tab1Content(ctk.CTkFrame):
         self.inner_tab4_content = InnerTab4Content(self.inner_tab4)
         self.inner_tab4_content.pack(fill="both", expand=True)
 
-        #self.inner_tab5_content = InnerTab5Content(self.inner_tab5)
-        #self.inner_tab5_content.pack(fill="both", expand=True)
+        self.inner_tab5_content = InnerTab5Content(self.inner_tab5)
+        self.inner_tab5_content.pack(fill="both", expand=True)
 
     def update_grid(self):
         self.inner_tab2_content.update_grid(self.saved_image_path, self.main_camera)

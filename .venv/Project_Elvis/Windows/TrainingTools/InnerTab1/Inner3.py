@@ -21,8 +21,10 @@ class InnerTab3Content(ctk.CTkFrame):
         self.start_x, self.start_y = 0, 0
         self.end_x, self.end_y = 0, 0
         self.threshold_value = 127
-        self.contours_image_path = "C:\\ELVIS\\contornos_inspeccion.jpg"
-        self.image_path = "C:\\Users\\y80txk\\Pictures\\ELVIS\\captured_image.jpg"
+        #Image
+        self.contours_image_path = Img.Contorns
+        self.image_path = Img.Master
+        self.Notfilter= Img.CutOriginalPicture
         self.last_modified = 0
 
         self.inspection_areas = [{'enabled': False, 'coords': (0, 0, 0, 0), 'width': 0, 'height': 0}]
@@ -414,8 +416,7 @@ class InnerTab3Content(ctk.CTkFrame):
                     if original_roi.size > 0:  # Verificar que la imagen no esté vacía
 
                         # Guardar imagen sin filtro
-                        original_image_path = f"C:\\ELVIS\\NotFilter_{index + 1}.jpg"
-                        Image.fromarray(original_roi).save(original_image_path)
+
 
                         # Aplicar filtro sin dibujar el marco ni la zona de inspección
                         filtered_frame = self.ApplyFilterWithoutDrawing(self.frame.copy(), self.inspection_areas,
@@ -430,7 +431,7 @@ class InnerTab3Content(ctk.CTkFrame):
                             cropped_filtered_roi = filtered_roi  # No recortar si la imagen es demasiado pequeña
 
                         # Guardar imagen con filtro y recortada
-                        filtered_image_path = f"C:\\ELVIS\\WithFilter_{index + 1}.jpg"
+                        filtered_image_path = Img.WithFilter
                         Image.fromarray(cropped_filtered_roi).save(filtered_image_path)
 
                         # Extraer y guardar contornos de la imagen con filtro
@@ -452,7 +453,7 @@ class InnerTab3Content(ctk.CTkFrame):
             original_roi = self.frame[y1:y2, x1:x2].copy()
             if original_roi.size > 0:  # Verificar que la imagen no esté vacía
                 # Guardar imagen sin filtro
-                original_image_path = f"C:\\ELVIS\\NotFilter.jpg"
+                original_image_path = self.Notfilter
                 Image.fromarray(original_roi).save(original_image_path)
                 return original_roi
             else:

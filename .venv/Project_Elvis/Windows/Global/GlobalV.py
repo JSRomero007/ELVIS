@@ -7,8 +7,12 @@ class Img:
     Camera=1
     ImgWidth=920
     ImgHeidht=520
-    Master= "C:\\Users\\y80txk\\Pictures\\ELVIS\\captured_image.jpg"
-    SaveImage="C:\\Users\\y80txk\\Pictures\\ELVIS\\tmp"
+    Master= "C:\\ELVIS\\captured_image.jpg"
+    TempDb="C:\\ELVIS\\TmpDB"
+    CutOriginalPicture = "C:\\ELVIS\\NotFilter.jpg"
+    WithFilter="C:\\ELVIS\\WithFilter.jpg"
+    Contorns= "C:\\ELVIS\\Contorns.jpg"
+
 
 
 class Inherit:

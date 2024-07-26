@@ -6,13 +6,14 @@ import numpy as np
 from Global.GlobalV import Inherit, Img
 
 
+
 class InnerTab3Content(ctk.CTkFrame):
     def __init__(self, parent, TabView, inner_tab_control):
         super().__init__(parent, fg_color="white")
         self.parent = parent
         self.inner_tab_control = inner_tab_control
         self.NextMotherTabContro = TabView
-        self.current_filter = Inherit.SelectionFilter
+        self.current_filter = "Negative"  # Siempre utilizar el filtro "Negative"
         self.Camera = Img.Camera
         self.ImgWid = Img.ImgWidth
         self.ImgHei = Img.ImgHeidht
@@ -21,10 +22,10 @@ class InnerTab3Content(ctk.CTkFrame):
         self.start_x, self.start_y = 0, 0
         self.end_x, self.end_y = 0, 0
         self.threshold_value = 127
-        #Image
+        # Image
         self.contours_image_path = Img.Contorns
         self.image_path = Img.Master
-        self.Notfilter= Img.CutOriginalPicture
+        self.Notfilter = Img.CutOriginalPicture
         self.last_modified = 0
 
         self.inspection_areas = [{'enabled': False, 'coords': (0, 0, 0, 0), 'width': 0, 'height': 0}]
@@ -42,39 +43,31 @@ class InnerTab3Content(ctk.CTkFrame):
         self.table_label = ctk.CTkLabel(self.button_panel, text="", justify="left")
         self.table_label.pack(pady=10)
 
-        self.threshold_slider = ctk.CTkSlider(self.button_panel, from_=0, to=255, number_of_steps=255, command=self.update_threshold)
-        self.threshold_slider.set(self.threshold_value)
-        self.threshold_slider.pack(pady=10)
-
-        # Agregar menú desplegable para seleccionar el filtro
-        self.filter_options = ["GrayScale", "RedVision", "HighlightShadow", "OnlyLines", "FrontLines", "Negative"]
-        self.selected_filter = ctk.StringVar(value=self.filter_options[0])
-        self.filter_menu = ctk.CTkOptionMenu(self.button_panel, variable=self.selected_filter, values=self.filter_options, command=self.update_filter)
-        self.filter_menu.pack(pady=10)
-
-        self.ShowImage()
-        self.UpdateImage()
-        self.UpdateFilter()
-
-        self.canvas.bind("<Button-1>", self.MouseDown)
-        self.canvas.bind("<B1-Motion>", self.MouseMove)
-        self.canvas.bind("<ButtonRelease-1>", self.MouseUp)
-
-        self.selected_area = ctk.StringVar(value="Inspection 1")
+        self.selected_area = ctk.StringVar(value="Inspection 1")  # Definir self.selected_area
         self.inspection_vars = [
             {'enabled': ctk.IntVar(), 'start_x': ctk.StringVar(), 'start_y': ctk.StringVar(), 'size_x': ctk.StringVar(),
              'size_y': ctk.StringVar()}
         ]
         self.InspectionControls()
 
-    def update_threshold(self, value):
-        self.threshold_value = int(value)
-        Inherit.ThresholdFilter=int(value)
-        print(f"Threshold value: {Inherit.ThresholdFilter}")  # Imprimir el valor del umbral
         self.ApplyFilter()
 
-    def update_filter(self, value):
-        Inherit.SelectionFilter = value
+        self.canvas.bind("<Button-1>", self.MouseDown)
+        self.canvas.bind("<B1-Motion>", self.MouseMove)
+        self.canvas.bind("<ButtonRelease-1>", self.MouseUp)
+
+        self.SelectionGrid = ctk.CTkFrame(self.button_panel, fg_color="white", bg_color="white")
+        self.SelectionGrid.pack(padx=10, pady=20)
+
+        Continue = ctk.CTkButton(self.SelectionGrid, text="Continue", text_color="black", command=self.NextStep)
+        Continue.grid(row=0, column=2, padx=10)
+        self.UpdateImage()
+
+    def update_threshold(self, value):
+        self.threshold_value = int(value)
+        Inherit.ThresholdFilter = int(value)
+        print(f"Threshold value: {Inherit.ThresholdFilter}")  # Imprimir el valor del umbral
+        self.threshold_label.configure(text=f"Threshold: {self.threshold_value}")
         self.ApplyFilter()
 
     # Get the coordinates Inspection 1 & Inspection 2 and save in GlobalV
@@ -91,21 +84,15 @@ class InnerTab3Content(ctk.CTkFrame):
     def InspectionControls(self):
         for i in range(1):
             frame = ctk.CTkFrame(self.button_panel, fg_color="white", border_color="Gray", border_width=1)
-            title_label = ctk.CTkLabel(self.button_panel, text=f"Inspection")
+            title_label = ctk.CTkLabel(frame, text=f"Inspection")
             title_label.pack(anchor="n", padx=10, pady=(5, 0))
 
             frame.pack(pady=10, fill="x", padx=10)
             control_frame = ctk.CTkFrame(frame, fg_color="white")
             control_frame.pack(fill="x", pady=5, padx=10)
 
-            ctk.CTkRadioButton(control_frame, text=f"Inspection", font=('Consolas', 14), text_color="black",
-                               variable=self.selected_area,
-                               value=f"Inspection {i + 1}", command=self.update_textbox_state).pack(side=ctk.LEFT,
-                                                                                                    padx=10)
+            # Ajustar el empaquetado de los widgets dentro del frame
             self.inspection_vars[i]['enabled'].set(1)  # Set the switch to always be active
-            # Remove the line that packs the CTkSwitch to avoid displaying it
-            # ctk.CTkSwitch(control_frame, text="Enable", font=('Consolas', 14), variable=self.inspection_vars[i]['enabled'],
-            #               command=lambda i=i: [self.toggle_area(i), self.update_textbox_state()]).pack(side=ctk.RIGHT, padx=10)
 
             ctk.CTkLabel(frame, text="Position", font=('Consolas', 14), text_color="black").pack()
             position_frame = ctk.CTkFrame(frame, fg_color="white")
@@ -143,12 +130,14 @@ class InnerTab3Content(ctk.CTkFrame):
             self.inspection_vars[i]['size_x_entry'] = size_x_entry
             self.inspection_vars[i]['size_y_entry'] = size_y_entry
 
-        self.UpdateInspectionVar()
-        self.SelectionGrid = ctk.CTkFrame(self.button_panel, fg_color="white", bg_color="white")
-        self.SelectionGrid.pack(padx=10, pady=20)
+            # Crear y empaquetar el slider y la etiqueta dentro del frame de inspección
+            self.threshold_slider = ctk.CTkSlider(frame, from_=0, to=255, number_of_steps=255,
+                                                  command=self.update_threshold)
+            self.threshold_slider.set(self.threshold_value)
+            self.threshold_slider.pack(pady=10)
 
-        Continue = ctk.CTkButton(self.SelectionGrid, text="Continue", text_color="black", command=self.NextStep)
-        Continue.grid(row=0, column=2, padx=10)
+            self.threshold_label = ctk.CTkLabel(frame, text=f"Threshold: {self.threshold_value}", justify="left")
+            self.threshold_label.pack(pady=10)
 
     def SelectionMode(self):
         if self.Selector.get() == 1:
@@ -164,29 +153,39 @@ class InnerTab3Content(ctk.CTkFrame):
             width = abs(end_x - start_x)
             height = abs(end_y - start_y)
 
-            selected_index = int(self.selected_area.get()[-1]) - 1
+            if width > 0 and height > 0:
+                selected_index = int(self.selected_area.get()[-1]) - 1
+                self.inspection_areas[selected_index] = {
+                    'shape': self.shape,
+                    'coords': coords,
+                    'width': width,
+                    'height': height,
+                    'enabled': self.inspection_vars[selected_index]['enabled'].get()
+                }
 
-            self.inspection_areas[selected_index] = {'shape': self.shape, 'coords': coords, 'width': width,
-                                                     'height': height,
-                                                     'enabled': self.inspection_vars[selected_index]['enabled'].get()}
+                # Capturar y guardar la imagen sin filtro
+                self.capture_inspection_image(self.inspection_areas[selected_index], selected_index)
 
-            # Capturar y guardar la imagen sin filtro
-            self.capture_inspection_image(self.inspection_areas[selected_index], selected_index)
-
-            self.UpdateInspectionVar()
-            self.ApplyFilter()
+                self.UpdateInspectionVar()
+                self.ApplyFilter()
+            else:
+                print("Error: Coordenadas no válidas para el área")
 
     # ------ Image ------
     # Filter
     def ApplyFilter(self, apply_only=False):
-        self.reset_image()
+        # Cargar la imagen original para asegurarse de que los filtros anteriores no se apliquen
+        self.frame = cv2.imread(self.image_path)
+        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+        self.frame = cv2.resize(self.frame, (self.ImgWid, self.ImgHei), interpolation=cv2.INTER_LINEAR)
+
         if self.inspection_areas:
             for area in self.inspection_areas:
-                if area['enabled']:
+                if area['enabled'] and area['coords'] != (0, 0, 0, 0):
                     x1, y1, x2, y2 = area['coords']
                     mask = self.frame[y1:y2, x1:x2].copy()
                     if mask.size != 0:
-                        filtered_mask = self.ApplyFilterInImage(Image.fromarray(mask), Inherit.SelectionFilter,
+                        filtered_mask = self.ApplyFilterInImage(Image.fromarray(mask), self.current_filter,
                                                                 self.threshold_value)
                         self.frame[y1:y2, x1:x2] = np.array(filtered_mask)
                         if not apply_only:
@@ -239,27 +238,29 @@ class InnerTab3Content(ctk.CTkFrame):
             self.frame = cv2.imread(self.image_path)
             if self.frame is not None:
                 self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-                # Redimensionar la imagen a las dimensiones especificadas (ImgWid x ImgHei)
-                new_width, new_height = self.ImgWid, self.ImgHei
-                self.frame = cv2.resize(self.frame, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
-
+                self.frame = cv2.resize(self.frame, (self.ImgWid, self.ImgHei), interpolation=cv2.INTER_LINEAR)
                 img = Image.fromarray(self.frame)
                 imgtk = ImageTk.PhotoImage(image=img)
-
-                # Configurar el tamaño del canvas para que se ajuste a la imagen
-                self.canvas.config(width=new_width, height=new_height)
-                self.canvas.update_idletasks()  # Forzar la actualización del canvas para obtener sus dimensiones
-
-                # Limpiar el canvas antes de dibujar la imagen
+                self.canvas.config(width=self.ImgWid, height=self.ImgHei)
+                self.canvas.update_idletasks()
                 self.canvas.delete("all")
-
-                # Crear la imagen dentro del canvas centrada
                 self.canvas.create_image(0, 0, anchor=ctk.NW, image=imgtk)
                 self.canvas.image = imgtk
             else:
                 print(f"Error: No se pudo cargar la imagen desde {self.image_path}")
         except Exception as e:
             print(f"Error al cargar la imagen: {e}")
+
+    def UpdateImage(self):
+        try:
+            modified_time = os.path.getmtime(self.image_path)
+            if modified_time != self.last_modified:
+                self.last_modified = modified_time
+                self.ShowImage()
+        except Exception as e:
+            print(f"Error al actualizar la imagen: {e}")
+
+        self.after(500, self.UpdateImage)
 
     def DrawShapes(self):
         for i, area in enumerate(self.inspection_areas):
@@ -292,9 +293,11 @@ class InnerTab3Content(ctk.CTkFrame):
 
     # ----- Mouse ------
     def MouseDown(self, event):
-        if self.inspection_areas[int(self.selected_area.get()[-1]) - 1]['enabled']:
-            self.drawing = True
-            self.start_x, self.start_y = event.x, event.y
+        selected_index = int(self.selected_area.get()[-1]) - 1
+        self.inspection_areas[selected_index]['enabled'] = True
+        self.drawing = True
+        self.start_x, self.start_y = event.x, event.y
+        self.end_x, self.end_y = event.x, event.y  # Initialize end_x and end_y to avoid invalid coordinates
 
     def MouseMove(self, event):
         if self.drawing:

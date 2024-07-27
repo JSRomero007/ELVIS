@@ -12,7 +12,7 @@ class MainCamera(ctk.CTkFrame):
         super().__init__(parent)
         self.Camera=Img.Camera
         self.ImgWid=Img.ImgWidth
-        self.ImgHei=Img.ImgHeidht
+        self.ImgHei=Img.ImgHeight
         self.filter_type = filter_type
         self.save_path = save_path
         self.update_callback = update_callback

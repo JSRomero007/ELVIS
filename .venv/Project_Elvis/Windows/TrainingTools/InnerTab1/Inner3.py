@@ -16,7 +16,7 @@ class InnerTab3Content(ctk.CTkFrame):
         self.current_filter = "Negative"  # Siempre utilizar el filtro "Negative"
         self.Camera = Img.Camera
         self.ImgWid = Img.ImgWidth
-        self.ImgHei = Img.ImgHeidht
+        self.ImgHei = Img.ImgHeight
         self.shape = 'square'
         self.drawing = False
         self.start_x, self.start_y = 0, 0

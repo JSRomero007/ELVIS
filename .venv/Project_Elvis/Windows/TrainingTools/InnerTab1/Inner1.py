@@ -352,6 +352,7 @@ class InnerTab1Content(ctk.CTkFrame):
         capture_button.grid(row=13, column=3,columnspan=4,  sticky="w",padx=(0,5))
 
     def Button_Capture(self):
+        self.main_camera.stop_camera()
         self.SwitchCamera.deselect()
         self.main_camera.capture_image()
         if self.main_camera:

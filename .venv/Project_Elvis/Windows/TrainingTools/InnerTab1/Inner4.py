@@ -19,12 +19,12 @@ class InnerTab4Content(tk.Frame):
         self.parent = parent
 
         self.EctractGlobalV()
-        self.inspection_areas_data = []
+        self.inspection_areas_data = Img.InspectionData
         self.drawing = False
         self.start_x, self.start_y = None, None
         self.shape_id = None
         self.shape_type = tk.StringVar(value="rectangle")  # Variable para los radiobuttons
-        self.inspection_areas = []
+        self.inspection_areas = Img.Inspection
         self.current_area_index = tk.IntVar(value=-1)
         self.show_all_shapes = tk.BooleanVar(value=True)
 
@@ -443,12 +443,23 @@ class InnerTab4Content(tk.Frame):
             area = self.inspection_areas[index]
             if area['canvas_id'] is not None:
                 self.canvas.delete(area['canvas_id'])  # Remove the shape from the canvas
+                self.second_canvas.delete(area['canvas_id'])  # Remove the shape from the second canvas
             del self.inspection_areas[index]
             self.current_area_index.set(-1)
+
+            # Eliminar el área de inspection_areas_data
+            for i, data in enumerate(self.inspection_areas_data):
+                if data['ID'] == index + 1:
+                    del self.inspection_areas_data[i]
+                    break
+
+            # Actualizar los IDs en inspection_areas_data
+            for i, data in enumerate(self.inspection_areas_data):
+                data['ID'] = i + 1
+
             self.update_radio_buttons()
             self.redraw_image()
             self.update_max_zones_label()  # Actualizar la etiqueta
-
 
     def update_radio_buttons(self):
         self.text_widget.config(state=tk.NORMAL)

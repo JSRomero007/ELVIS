@@ -74,5 +74,14 @@ class CameraHandler:
             self.stop_event.set()
             self.thread.join()
 
+    def get_current_frame(self):
+        ret, frame = self.cap.read()
+        if ret:
+            img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            return Image.fromarray(img)
+        else:
+            print("Failed to capture image")
+            return None
+
     def __del__(self):
         self.cap.release()

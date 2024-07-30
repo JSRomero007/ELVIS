@@ -16,14 +16,13 @@ class Img:
 
     InspectionData=[] #More relevant
     Inspection=[]
-
-
-
+    InspectionArea=[]
+    ThresholdFilter=""
 
 class Inherit:
 
+
     SelectionFilter=""
-    ThresholdFilter=""
     Inspection1="0,0,0,0,0"
     #In this moment i need only one Inspection zone
     #Inspection2="0,0,0,0,0"

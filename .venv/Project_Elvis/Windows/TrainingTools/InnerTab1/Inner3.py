@@ -6,7 +6,6 @@ import numpy as np
 from Global.GlobalV import Inherit, Img
 
 
-
 class InnerTab3Content(ctk.CTkFrame):
     def __init__(self, parent, TabView, inner_tab_control):
         super().__init__(parent, fg_color="white")
@@ -30,25 +29,59 @@ class InnerTab3Content(ctk.CTkFrame):
 
         self.inspection_areas = [{'enabled': False, 'coords': (0, 0, 0, 0), 'width': 0, 'height': 0}]
 
-        self.image_frame = ctk.CTkFrame(self, fg_color="white", border_width=0)
-        self.image_frame.pack(side=ctk.LEFT, padx=0, pady=0)
-
-        self.button_panel = ctk.CTkFrame(self, fg_color="white", border_width=0)
-        self.button_panel.pack(side=ctk.RIGHT, padx=10, pady=10, fill="y")
-
-        self.canvas = ctk.CTkCanvas(self.image_frame, width=self.ImgWid, height=self.ImgHei, highlightthickness=0,
-                                    bg="white")
-        self.canvas.pack(expand=True, fill="both")  # Ajustar para que el canvas llene el espacio disponible
-
-        self.table_label = ctk.CTkLabel(self.button_panel, text="", justify="left")
-        self.table_label.pack(pady=10)
-
-        self.selected_area = ctk.StringVar(value="Inspection 1")  # Definir self.selected_area
+        # Inicializar self.inspection_vars antes de llamar a InspectionControls
         self.inspection_vars = [
             {'enabled': ctk.IntVar(), 'start_x': ctk.StringVar(), 'start_y': ctk.StringVar(), 'size_x': ctk.StringVar(),
              'size_y': ctk.StringVar()}
         ]
+
+        # Configurar el layout del grid
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=0)
+        self.grid_columnconfigure(2,minsize=500)
+        self.grid_rowconfigure(0, minsize=50, weight=0)  # Header con tamaño fijo de 50 px
+        self.grid_rowconfigure(1, minsize=120, weight=0)  # Fila 1 se expande
+        self.grid_rowconfigure(2, weight=1)  # Fila 2 con tamaño fijo de 120 px
+        self.grid_rowconfigure(3, minsize=50, weight=0)  # Fila 3 se expande
+        # Fila 0: Footer
+        self.footer_label_top = ctk.CTkLabel(self, text="Footer (Top)", justify="center")
+        self.footer_label_top.grid(row=0, column=0, columnspan=3, pady=5)
+
+        # Fila 1: Labels en cada columna
+        self.label1 = ctk.CTkLabel(self, text="Label 1", justify="center")
+        self.label1.grid(row=1, column=0, pady=5)
+        self.label2 = ctk.CTkLabel(self, text="Label 2", justify="center")
+        self.label2.grid(row=1, column=1, pady=5)
+        self.label3 = ctk.CTkLabel(self, text="Label 3", justify="center")
+        self.label3.grid(row=1, column=2, pady=5)
+
+        # Fila 2: Imagen en columna 0 y 1, Inspection controls en columna 2
+        self.image_frame = ctk.CTkFrame(self, fg_color="white", border_width=0)
+        self.image_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
+
+        self.image_frame.grid_rowconfigure(0, weight=1)
+        self.image_frame.grid_columnconfigure(0, weight=1)
+
+        self.canvas = ctk.CTkCanvas(self.image_frame, width=self.ImgWid, height=self.ImgHei)
+        self.canvas.grid(row=0,column=0)
+
+
+
+        self.button_panel = ctk.CTkFrame(self, fg_color="white", border_width=0)
+        self.button_panel.grid(row=2, column=2, padx=10, pady=10, sticky="nsew")
+
         self.InspectionControls()
+
+        # Botón Continue
+        self.continue_button = ctk.CTkButton(self.button_panel, text="Continue", text_color="black", command=self.NextStep)
+        self.continue_button.pack(pady=10)
+
+        # Fila 3: Footer
+        self.footer_label_bottom = ctk.CTkLabel(self, text="Footer (Bottom)", justify="center")
+        self.footer_label_bottom.grid(row=3, column=0, columnspan=3, pady=5)
+
+        self.selected_area = ctk.StringVar(value="Inspection 1")
 
         self.ApplyFilter()
 
@@ -56,17 +89,13 @@ class InnerTab3Content(ctk.CTkFrame):
         self.canvas.bind("<B1-Motion>", self.MouseMove)
         self.canvas.bind("<ButtonRelease-1>", self.MouseUp)
 
-        self.SelectionGrid = ctk.CTkFrame(self.button_panel, fg_color="white", bg_color="white")
-        self.SelectionGrid.pack(padx=10, pady=20)
-
-        Continue = ctk.CTkButton(self.SelectionGrid, text="Continue", text_color="black", command=self.NextStep)
-        Continue.grid(row=0, column=2, padx=10)
         self.UpdateImage()
+
 
     def update_threshold(self, value):
         self.threshold_value = int(value)
-        Inherit.ThresholdFilter = int(value)
-        print(f"Threshold value: {Inherit.ThresholdFilter}")  # Imprimir el valor del umbral
+        Img.ThresholdFilter = int(value)
+        #print(f"Threshold value: {Img.ThresholdFilter}")  # Imprimir el valor del umbral
         self.threshold_label.configure(text=f"Threshold: {self.threshold_value}")
         self.ApplyFilter()
 
@@ -97,13 +126,11 @@ class InnerTab3Content(ctk.CTkFrame):
             ctk.CTkLabel(frame, text="Position", font=('Consolas', 14), text_color="black").pack()
             position_frame = ctk.CTkFrame(frame, fg_color="white")
             position_frame.pack(fill="x", pady=5, padx=10)
-            ctk.CTkLabel(position_frame, text="X", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT,
-                                                                                                   padx=10)
+            ctk.CTkLabel(position_frame, text="X", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT, padx=10)
             start_x_entry = ctk.CTkEntry(position_frame, textvariable=self.inspection_vars[i]['start_x'])
             start_x_entry.pack(side=ctk.LEFT, padx=5)
             start_x_entry.bind("<Return>", lambda event, i=i: self.update_position(i))
-            ctk.CTkLabel(position_frame, text="Y", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT,
-                                                                                                   padx=10)
+            ctk.CTkLabel(position_frame, text="Y", font=('Consolas', 14), text_color="black").pack(side=ctk.LEFT, padx=10)
             start_y_entry = ctk.CTkEntry(position_frame, textvariable=self.inspection_vars[i]['start_y'])
             start_y_entry.pack(side=ctk.LEFT, padx=5)
             start_y_entry.bind("<Return>", lambda event, i=i: self.update_position(i))
@@ -130,9 +157,10 @@ class InnerTab3Content(ctk.CTkFrame):
             self.inspection_vars[i]['size_x_entry'] = size_x_entry
             self.inspection_vars[i]['size_y_entry'] = size_y_entry
 
+
+
             # Crear y empaquetar el slider y la etiqueta dentro del frame de inspección
-            self.threshold_slider = ctk.CTkSlider(frame, from_=0, to=255, number_of_steps=255,
-                                                  command=self.update_threshold)
+            self.threshold_slider = ctk.CTkSlider(frame, from_=0, to=255, number_of_steps=255, command=self.update_threshold)
             self.threshold_slider.set(self.threshold_value)
             self.threshold_slider.pack(pady=10)
 

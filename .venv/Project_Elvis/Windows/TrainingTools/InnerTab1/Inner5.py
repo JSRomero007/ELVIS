@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from customtkinter import CTkCanvas
 from CameraTools import CameraHandler
-from Global.GlobalV import Img
+from Global.GlobalV import Img,Inherit
 
 class InnerTab5Content(ctk.CTkFrame):
     def __init__(self, parent):
@@ -9,7 +9,8 @@ class InnerTab5Content(ctk.CTkFrame):
         self.parent = parent
         self.configure(fg_color="white")
         self.camera_handler = CameraHandler()
-        #Frame
+        self.states = {}  # Inicializar states aquí
+        self.drawn_items = {}  # Inicializar drawn_items aquí
         self.Header()
         self.LblOkZone()
         self.LblNGZone()
@@ -19,7 +20,6 @@ class InnerTab5Content(ctk.CTkFrame):
         self.BackNextButtos()
         self.Footer()
         self.previous_length = len(Img.InspectionData)  # Store the initial length
-        self.states = {}
         self.check_for_updates()
 
         # Configurar las columnas para que se expandan
@@ -34,41 +34,45 @@ class InnerTab5Content(ctk.CTkFrame):
         self.grid_rowconfigure(0, minsize=50, weight=0)  # Header con tamaño fijo de 50 px
         self.grid_rowconfigure(1, minsize=120, weight=0)  # Fila 1 se expande
         self.grid_rowconfigure(2, weight=1)  # Fila 2 con tamaño fijo de 120 px
-        self.grid_rowconfigure(3,minsize=80, weight=0)  # Fila 3 se expande
+        self.grid_rowconfigure(3, minsize=80, weight=0)  # Fila 3 se expande
         self.grid_rowconfigure(4, minsize=50, weight=0)  # Footer con tamaño fijo de 50 px
 
         # Empaquetar el frame principal para que ocupe todo el espacio disponible
         self.pack(fill="both", expand=True)
 
+
+
+
     def Header(self):
         # Fila 1: Columna 1 a 3 expandida label (header)
         header_label = ctk.CTkLabel(self, text="- Clasification -", fg_color="white", font=('Consolas', 20), text_color="black")
         header_label.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=5, pady=5)
+
     def LblOkZone(self):
         OkZone = ctk.CTkFrame(self, fg_color="lightgray")
         OkZone.grid(row=1, column=0, columnspan=1, sticky="nsew", padx=5, pady=5)
         OkZone.grid_rowconfigure(0, weight=1)
         OkZone.grid_rowconfigure(1, weight=1)
 
-        OkZone.grid_columnconfigure(0,minsize=80, weight=0)
+        OkZone.grid_columnconfigure(0, minsize=80, weight=0)
         OkZone.grid_columnconfigure(1, weight=1)
 
+        Oklabel = ctk.CTkLabel(OkZone, text="OK", fg_color="white", font=('Consolas', 30, "bold"), text_color="Green")
+        Oklabel.grid(row=0, rowspan=2, column=0, sticky="nsew", padx=5, pady=5)
 
-        Oklabel = ctk.CTkLabel(OkZone, text="OK",fg_color="white",font=('Consolas',30,"bold"),text_color="Green")
-        Oklabel.grid(row=0,rowspan=2, column=0, sticky="nsew", padx=5, pady=5)
-
-        label = ctk.CTkLabel(OkZone, text="OK",fg_color="white",font=('Consolas',20,"bold"),text_color="Gray")
+        label = ctk.CTkLabel(OkZone, text="OK", fg_color="white", font=('Consolas', 20, "bold"), text_color="Gray")
         label.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
-        #Frame to count and view
-        CountAndView = ctk.CTkFrame(OkZone,fg_color="white")
+        # Frame to count and view
+        CountAndView = ctk.CTkFrame(OkZone, fg_color="white")
         CountAndView.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
-        CountAndView.grid_columnconfigure(0,weight=1)
-        Count = ctk.CTkLabel(CountAndView, text="Do you have 10 Good pictures ",fg_color="white",font=('Consolas',15),text_color="black")
-        Count.grid(row=0,rowspan=2, column=0, sticky="nsew", padx=5, pady=5)
+        CountAndView.grid_columnconfigure(0, weight=1)
+        Count = ctk.CTkLabel(CountAndView, text="Do you have 10 Good pictures", fg_color="white", font=('Consolas', 15), text_color="black")
+        Count.grid(row=0, rowspan=2, column=0, sticky="nsew", padx=5, pady=5)
 
-        View = ctk.CTkButton(CountAndView, text="View",fg_color="white",font=('Consolas',20,"bold"),text_color="black")
+        View = ctk.CTkButton(CountAndView, text="View", fg_color="white", font=('Consolas', 20, "bold"), text_color="black")
         View.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+
     def LblNGZone(self):
         OkZone = ctk.CTkFrame(self, fg_color="lightgray")
         OkZone.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
@@ -76,24 +80,23 @@ class InnerTab5Content(ctk.CTkFrame):
         OkZone.grid_rowconfigure(0, weight=1)
         OkZone.grid_rowconfigure(1, weight=1)
 
-        OkZone.grid_columnconfigure(0,minsize=80, weight=0)
+        OkZone.grid_columnconfigure(0, minsize=80, weight=0)
         OkZone.grid_columnconfigure(1, weight=1)
 
+        Oklabel = ctk.CTkLabel(OkZone, text="NG", fg_color="white", font=('Consolas', 30, "bold"), text_color="Red")
+        Oklabel.grid(row=0, rowspan=2, column=0, sticky="nsew", padx=5, pady=5)
 
-        Oklabel = ctk.CTkLabel(OkZone, text="NG",fg_color="white",font=('Consolas',30,"bold"),text_color="Red")
-        Oklabel.grid(row=0,rowspan=2, column=0, sticky="nsew", padx=5, pady=5)
-
-        label = ctk.CTkLabel(OkZone, text="OK",fg_color="white",font=('Consolas',20,"bold"),text_color="Gray")
+        label = ctk.CTkLabel(OkZone, text="OK", fg_color="white", font=('Consolas', 20, "bold"), text_color="Gray")
         label.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
-        #Frame to count and view
-        CountAndView = ctk.CTkFrame(OkZone,fg_color="white")
+        # Frame to count and view
+        CountAndView = ctk.CTkFrame(OkZone, fg_color="white")
         CountAndView.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
-        CountAndView.grid_columnconfigure(0,weight=1)
-        Count = ctk.CTkLabel(CountAndView, text="Do you have 10 Good pictures ",fg_color="white",font=('Consolas',15),text_color="black")
-        Count.grid(row=0,rowspan=2, column=0, sticky="nsew", padx=5, pady=5)
+        CountAndView.grid_columnconfigure(0, weight=1)
+        Count = ctk.CTkLabel(CountAndView, text="Do you have 10 Good pictures", fg_color="white", font=('Consolas', 15), text_color="black")
+        Count.grid(row=0, rowspan=2, column=0, sticky="nsew", padx=5, pady=5)
 
-        View = ctk.CTkButton(CountAndView, text="View",fg_color="white",font=('Consolas',20,"bold"),text_color="black")
+        View = ctk.CTkButton(CountAndView, text="View", fg_color="white", font=('Consolas', 20, "bold"), text_color="black")
         View.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
     def MainArea(self):
@@ -107,17 +110,71 @@ class InnerTab5Content(ctk.CTkFrame):
         self.MainPic = CTkCanvas(MainFrame, width=Img.ImgWidth, height=Img.ImgHeight)  # Ajusta el tamaño del canvas aquí
         self.MainPic.grid(row=0, column=0)
 
+
+
     def Trigger(self):
         TriggerFrame = ctk.CTkLabel(self, text="Label 2.3", fg_color="lightgray")
         TriggerFrame.grid(row=1, column=2, sticky="nsew", padx=5, pady=5)
-        TriggerFrame.grid_columnconfigure(0,weight=1)
-        TriggerFrame.grid_columnconfigure(0,weight=1)
+        TriggerFrame.grid_columnconfigure(0, weight=1)
+        TriggerFrame.grid_columnconfigure(0, weight=1)
 
-        TriggerButton =ctk.CTkButton(TriggerFrame,text="Trigger", command=self.capture_single_image)
+        TriggerButton = ctk.CTkButton(TriggerFrame, text="Trigger", command=self.capture_single_image)
         TriggerButton.grid(row=0, column=0)
+
     def capture_single_image(self):
         self.camera_handler.capture_single_image(self.MainPic)
+        # Obtener y procesar la cadena de Inherit.Inspection1
+        data = Inherit.Inspection1.split(',')
+        rect_x = int(data[1])
+        rect_y = int(data[2])
+        rect_width = int(data[3])
+        rect_height = int(data[4])
 
+        # Dibujar el rectángulo en el canvas
+        self.MainPic.create_rectangle(rect_x, rect_y, rect_x + rect_width, rect_y + rect_height, outline='red', width=2)
+
+        # Dibujar las formas de InspectionData dentro del rectángulo
+        for item in Img.InspectionData:
+            self.draw_shape(item, rect_x, rect_y)
+    def show_image_on_canvas(self, img):
+        self.MainPic.delete("all")  # Limpiar el canvas antes de mostrar la nueva imagen
+        self.image_on_canvas = ctk.CTkImage(img)
+        self.MainPic.create_image(0, 0, anchor='nw', image=self.image_on_canvas)
+
+    def draw_shape(self, item, rect_x, rect_y):
+        shape_x = item['PositionX']
+        shape_y = item['PositionY']
+        shape_type = item['Type']
+        item_id = item['ID']
+
+        if shape_type == 'oval':
+            size_x = item['SizeX']
+            size_y = item['SizeY']
+            shape_x += size_x / 2
+            shape_y += size_y / 2
+            shape = self.MainPic.create_oval(rect_x + shape_x - size_x / 2, rect_y + shape_y - size_y / 2,
+                                             rect_x + shape_x + size_x / 2, rect_y + shape_y + size_y / 2,
+                                             outline='red', width=2)
+        elif shape_type == 'rectangle':
+            size_x = item['SizeX']
+            size_y = item['SizeY']
+            shape_x += size_x / 2
+            shape_y += size_y / 2
+            shape = self.MainPic.create_rectangle(rect_x + shape_x - size_x / 2, rect_y + shape_y - size_y / 2,
+                                                  rect_x + shape_x + size_x / 2, rect_y + shape_y + size_y / 2,
+                                                  outline='red', width=2)
+        elif shape_type == 'circle':
+            radius = item['Radio']
+            shape_x += radius
+            shape_y += radius
+            shape = self.MainPic.create_oval(rect_x + shape_x - radius, rect_y + shape_y - radius,
+                                             rect_x + shape_x + radius, rect_y + shape_y + radius,
+                                             outline='red', width=2)
+
+        # Almacenar referencia del elemento dibujado
+        if item_id not in self.drawn_items:
+            self.drawn_items[item_id] = []
+        self.drawn_items[item_id].append(shape)
     def ButtonsArea(self):
         self.ButtonFrame = ctk.CTkFrame(self, fg_color="White")
         self.ButtonFrame.grid(row=2, column=2, sticky="nsew", padx=5, pady=5)
@@ -128,15 +185,15 @@ class InnerTab5Content(ctk.CTkFrame):
         self.ButtonFrame.grid_rowconfigure(1, weight=1)
 
         # -- OK Area
-       #oklabel = ctk.CTkButton(self.ButtonFrame, text="Ok", fg_color="white", font=('Consolas', 15),text_color="black")
-        #oklabel.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        # oklabel = ctk.CTkButton(self.ButtonFrame, text="Ok", fg_color="white", font=('Consolas', 15), text_color="black")
+        # oklabel.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
         # -- NG Area
-        #NGlabel = ctk.CTkButton(self.ButtonFrame, text="NG", fg_color="white", font=('Consolas', 15))
-        #NGlabel.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+        # NGlabel = ctk.CTkButton(self.ButtonFrame, text="NG", fg_color="white", font=('Consolas', 15))
+        # NGlabel.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
         # Frame for list elements
-        self.ListFrame = ctk.CTkScrollableFrame(self.ButtonFrame, bg_color="white",fg_color="white", height=300)  # Scrollable frame
+        self.ListFrame = ctk.CTkScrollableFrame(self.ButtonFrame, bg_color="white", fg_color="white", height=300)  # Scrollable frame
         self.ListFrame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
 
         self.ListFrame.grid_columnconfigure(0, weight=1)  # Adjust weight to control spacing
@@ -201,7 +258,19 @@ class InnerTab5Content(ctk.CTkFrame):
     def update_state(self, item_id, widget_type, value):
         if item_id in self.states:
             self.states[item_id][widget_type] = value
-            print(f"Updated {widget_type} state for ID {item_id}: {value}")
+            if widget_type == 'checkbox':
+                if value:  # Si se selecciona el checkbox
+                    # Dibujar nuevamente las formas
+                    for item in Img.InspectionData:
+                        if item['ID'] == item_id:
+                            self.draw_shape(item, int(Inherit.Inspection1.split(',')[1]),
+                                            int(Inherit.Inspection1.split(',')[2]))
+                else:  # Si se deselecciona el checkbox
+                    # Eliminar las formas del canvas
+                    if item_id in self.drawn_items:
+                        for shape in self.drawn_items[item_id]:
+                            self.MainPic.delete(shape)
+                        del self.drawn_items[item_id]
 
     def update_list_elements(self):
         # Clear current elements
@@ -228,30 +297,23 @@ class InnerTab5Content(ctk.CTkFrame):
         button_frame.grid(row=3, column=2, sticky="nsew", padx=5, pady=5)
 
         # Crear los botones dentro del frame
-        button_1 = ctk.CTkButton(button_frame, text="Back",command=self.testData)
-        button_2 = ctk.CTkButton(button_frame, text="Next step",command=self.test)
+        button_1 = ctk.CTkButton(button_frame, text="Back", command=self.testData)
+        button_2 = ctk.CTkButton(button_frame, text="Next step", command=self.test)
 
         # Colocar los botones en el frame
         button_1.pack(side="left", padx=5, pady=5)
         button_2.pack(side="right", padx=5, pady=5)
+
     def Footer(self):
         footer_label = ctk.CTkLabel(self, text="Footer", fg_color="gray")
         footer_label.grid(row=4, column=0, columnspan=3, sticky="nsew", padx=5, pady=5)
 
     def test(self):
         print(self.states)
+
     def testData(self):
         print(Img.InspectionData)
-
-
-
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    app = ctk.CTk()
-    app.geometry("600x400")
-
-    inner_tab_content = InnerTab5Content(app)
-    inner_tab_content.pack(fill="both", expand=True)
-
-    app.mainloop()
+        print("--------------")
+        print(Img.InspectionArea)
+        print("--------------")
+        print(Inherit.Inspection1)

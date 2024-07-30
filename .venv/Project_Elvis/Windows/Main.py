@@ -36,6 +36,7 @@ class MainApp(ctk.CTk):
         self.minsize(1100,800)
         # full screen, clear controls, Exit Button
         #self.attributes('-fullscreen', True)
+
         self.overrideredirect(False)
         self.bind('<Escape>', self.exit_fullscreen)
 

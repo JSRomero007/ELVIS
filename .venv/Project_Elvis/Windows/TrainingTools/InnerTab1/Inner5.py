@@ -1,8 +1,14 @@
 import customtkinter as ctk
 from customtkinter import CTkCanvas
 from CameraTools import CameraHandler
-from Global.GlobalV import Img,Inherit
-
+from Global.GlobalV import Img,Inherit,Calibration
+import os  # Importar el módulo os
+import shutil  # Importar el módulo shutil
+from PIL import ImageGrab
+from PIL import Image, ImageDraw  # Asegúrate de tener PILLOW instalado: pip install pillow
+import io  # Importar el módulo io para manejar los flujos de entrada/salida
+import cv2  # Importar OpenCV
+import numpy as np
 class InnerTab5Content(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent)
@@ -11,6 +17,7 @@ class InnerTab5Content(ctk.CTkFrame):
         self.camera_handler = CameraHandler()
         self.states = {}  # Inicializar states aquí
         self.drawn_items = {}  # Inicializar drawn_items aquí
+        self.image_counters = {}
         self.Header()
         self.LblOkZone()
         self.LblNGZone()
@@ -101,7 +108,7 @@ class InnerTab5Content(ctk.CTkFrame):
 
     def MainArea(self):
         MainFrame = ctk.CTkFrame(self, fg_color="white")
-        MainFrame.grid(row=2, rowspan=2, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        MainFrame.grid(row=2, rowspan=2, column=0, columnspan=2, padx=5, pady=5)
 
         # Configurar el grid dentro del Frame para que también se expanda
         MainFrame.grid_rowconfigure(0, weight=1)
@@ -109,8 +116,6 @@ class InnerTab5Content(ctk.CTkFrame):
 
         self.MainPic = CTkCanvas(MainFrame, width=Img.ImgWidth, height=Img.ImgHeight)  # Ajusta el tamaño del canvas aquí
         self.MainPic.grid(row=0, column=0)
-
-
 
     def Trigger(self):
         TriggerFrame = ctk.CTkLabel(self, text="Label 2.3", fg_color="lightgray")
@@ -125,8 +130,8 @@ class InnerTab5Content(ctk.CTkFrame):
         self.camera_handler.capture_single_image(self.MainPic)
         # Obtener y procesar la cadena de Inherit.Inspection1
         data = Inherit.Inspection1.split(',')
-        rect_x = int(data[1])
-        rect_y = int(data[2])
+        rect_x = int(data[1])+Calibration.CalibrationX
+        rect_y = int(data[2])+Calibration.CalibrationY
         rect_width = int(data[3])
         rect_height = int(data[4])
 
@@ -136,14 +141,16 @@ class InnerTab5Content(ctk.CTkFrame):
         # Dibujar las formas de InspectionData dentro del rectángulo
         for item in Img.InspectionData:
             self.draw_shape(item, rect_x, rect_y)
+
     def show_image_on_canvas(self, img):
         self.MainPic.delete("all")  # Limpiar el canvas antes de mostrar la nueva imagen
-        self.image_on_canvas = ctk.CTkImage(img)
+        self.image_on_canvas = ImageTk.PhotoImage(img)  # Asegúrate de usar ImageTk.PhotoImage aquí
         self.MainPic.create_image(0, 0, anchor='nw', image=self.image_on_canvas)
 
+
     def draw_shape(self, item, rect_x, rect_y):
-        shape_x = item['PositionX']
-        shape_y = item['PositionY']
+        shape_x = (item['PositionX'])
+        shape_y = (item['PositionY'])
         shape_type = item['Type']
         item_id = item['ID']
 
@@ -171,7 +178,6 @@ class InnerTab5Content(ctk.CTkFrame):
                                              rect_x + shape_x + radius, rect_y + shape_y + radius,
                                              outline='red', width=2)
 
-        # Almacenar referencia del elemento dibujado
         if item_id not in self.drawn_items:
             self.drawn_items[item_id] = []
         self.drawn_items[item_id].append(shape)
@@ -184,19 +190,16 @@ class InnerTab5Content(ctk.CTkFrame):
         self.ButtonFrame.grid_rowconfigure(0, minsize=80, weight=0)
         self.ButtonFrame.grid_rowconfigure(1, weight=1)
 
-        # -- OK Area
-        # oklabel = ctk.CTkButton(self.ButtonFrame, text="Ok", fg_color="white", font=('Consolas', 15), text_color="black")
-        # oklabel.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        # Botón para guardar la inspección
+        self.SaveButton = ctk.CTkButton(self.ButtonFrame, text="Save Inspection", command=self.save_inspection)
+        self.SaveButton.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
 
-        # -- NG Area
-        # NGlabel = ctk.CTkButton(self.ButtonFrame, text="NG", fg_color="white", font=('Consolas', 15))
-        # NGlabel.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-
-        # Frame for list elements
-        self.ListFrame = ctk.CTkScrollableFrame(self.ButtonFrame, bg_color="white", fg_color="white", height=300)  # Scrollable frame
+        # Frame para elementos de la lista
+        self.ListFrame = ctk.CTkScrollableFrame(self.ButtonFrame, bg_color="white", fg_color="white",
+                                                height=300)  # Scrollable frame
         self.ListFrame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
 
-        self.ListFrame.grid_columnconfigure(0, weight=1)  # Adjust weight to control spacing
+        self.ListFrame.grid_columnconfigure(0, weight=1)  # Ajustar peso para controlar el espaciado
         self.ListFrame.grid_columnconfigure(1, weight=1)
         self.ListFrame.grid_columnconfigure(2, weight=1)
         self.ListFrame.grid_columnconfigure(3, weight=1)
@@ -279,11 +282,154 @@ class InnerTab5Content(ctk.CTkFrame):
 
         current_ids = [item['ID'] for item in Img.InspectionData]
 
+        # Crear y eliminar las carpetas automáticamente
+        self.manage_inspection_folders(current_ids)
+
         # Limpia los estados no utilizados
         self.clean_unused_states(current_ids)
 
         if len(Img.InspectionData) > 0:
             self.add_list_elements(self.ListFrame, 0, Img.InspectionData)  # List in a single column
+
+    def save_inspection(self):
+        # Desactivar la actualización de la interfaz
+        self.update_idletasks()
+        self.grid_propagate(False)
+
+        data = Inherit.Inspection1.split(',')
+        rect_x = int(data[1])+Calibration.CalibrationX
+        rect_y = int(data[2])+Calibration.CalibrationY
+        rect_width = int(data[3])
+        rect_height = int(data[4])
+
+        for item in Img.InspectionData:
+            item_id = item['ID']
+            if not self.states[item_id]['checkbox']:
+                continue
+
+            shape_x = (int(item['PositionX']))
+            shape_y = (int(item['PositionY']))
+            print(shape_x,shape_y)
+            shape_type = item['Type']
+
+            self.hide_all_shapes()
+            self.draw_shape(item, rect_x, rect_y)
+            self.update_idletasks()
+
+            # Capturar la imagen del área del canvas después de dibujar la forma
+            x1 = self.MainPic.winfo_rootx()
+            y1 = self.MainPic.winfo_rooty()
+            x2 = x1 + self.MainPic.winfo_width()
+            y2 = y1 + self.MainPic.winfo_height()
+            img = ImageGrab.grab(bbox=(x1, y1, x2, y2))
+            img_np = np.array(img)
+
+            # Convertir la imagen a escala de grises
+            gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+
+            # Aplicar umbral
+            threshold_value = Img.ThresholdFilter
+            _, img_threshold = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
+
+            # Detectar contornos usando Canny
+            img_contours = cv2.Canny(img_threshold, 50, 150)
+
+            # Crear una imagen en color a partir de los contornos detectados
+            img_contours_colored = np.zeros_like(img_np)
+            img_contours_colored[:, :, 1] = img_contours  # Colocar los contornos en el canal verde
+
+            if self.states[item_id]['toggle']:
+                folder = os.path.join(Img.TempDb, f"Inspection_{item_id}", "OK")
+                status = "OK"
+            else:
+                folder = os.path.join(Img.TempDb, f"Inspection_{item_id}", "NG")
+                status = "NG"
+
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+
+            if item_id not in self.image_counters:
+                self.image_counters[item_id] = {"OK": 0, "NG": 0}
+            self.image_counters[item_id][status] += 1
+
+            file_name = f"Inspection_{item_id}_{status}_{self.image_counters[item_id][status]:03d}.png"
+
+            img_cropped = img_contours_colored[rect_y:rect_y + rect_height, rect_x:rect_x + rect_width]
+
+            mask = np.zeros_like(img_cropped[:, :, 0], dtype=np.uint8)  # Crear máscara de un solo canal
+            mask[:] = 255  # Máscara blanca
+
+            # Dibujar la forma en la máscara y eliminar un borde de 5 píxeles
+            # Dibujar la forma en la máscara y eliminar un borde de 5 píxeles
+
+            if shape_type == 'oval':
+                shape_x += (int(item['SizeX']) // 2)
+                shape_y += (int(item['SizeY']) // 2)
+                cv2.ellipse(mask, (shape_x, shape_y), ((int(item['SizeX']) // 2)-2, (int(item['SizeY']) // 2) - 2), 0, 0,
+                            360, 0, -1)
+            elif shape_type == 'rectangle':
+                cv2.rectangle(mask, (shape_x + 2, shape_y + 2),
+                              (shape_x + int(item['SizeX']) - 2, shape_y + int(item['SizeY']) - 2), 0, -1 )
+            elif shape_type == 'circle':
+                shape_x += (int(item['Radio']))
+                shape_y += (int(item['Radio']))
+                cv2.circle(mask, (shape_x, shape_y), int(item['Radio'])-2 , 0, -1)
+
+            img_result = img_cropped.copy()
+            img_result[mask == 255] = (0, 0, 0)  # Color the area outside the inspection in black
+
+            # Convertir de nuevo a imagen PIL y guardar
+            img_result_pil = Image.fromarray(cv2.cvtColor(img_result, cv2.COLOR_BGR2RGB))
+            img_result_pil.save(os.path.join(folder, file_name))
+
+            self.hide_shape(item_id)
+
+        # Mostrar todas las formas al finalizar
+        self.show_all_shapes()
+
+        # Reactivar la actualización de la interfaz
+        self.grid_propagate(True)
+        self.update_idletasks()
+
+    def hide_all_shapes(self):
+        for item_id in self.drawn_items:
+            for shape in self.drawn_items[item_id]:
+                self.MainPic.itemconfig(shape, state='hidden')
+
+    def hide_shape(self, item_id):
+        if item_id in self.drawn_items:
+            for shape in self.drawn_items[item_id]:
+                self.MainPic.itemconfig(shape, state='hidden')
+
+    def show_all_shapes(self):
+        for item_id in self.drawn_items:
+            for shape in self.drawn_items[item_id]:
+                self.MainPic.itemconfig(shape, state='normal')
+
+
+    def manage_inspection_folders(self, current_ids):
+        base_path = Img.TempDb
+        # Crear carpetas para los IDs actuales
+        for item_id in current_ids:
+            inspection_folder = os.path.join(base_path, f"Inspection_{item_id}")
+            ng_folder = os.path.join(inspection_folder, "NG")
+            ok_folder = os.path.join(inspection_folder, "OK")
+
+            if not os.path.exists(inspection_folder):
+                os.makedirs(inspection_folder)
+            if not os.path.exists(ng_folder):
+                os.makedirs(ng_folder)
+            if not os.path.exists(ok_folder):
+                os.makedirs(ok_folder)
+
+        # Eliminar carpetas para IDs que ya no están presentes
+        all_inspection_folders = [f for f in os.listdir(base_path) if f.startswith("Inspection_")]
+        for folder in all_inspection_folders:
+            folder_id = int(folder.split("_")[1])
+            if folder_id not in current_ids:
+                inspection_folder = os.path.join(base_path, folder)
+                if os.path.exists(inspection_folder):
+                    shutil.rmtree(inspection_folder)  # Eliminar el directorio y todo su contenido
 
     def check_for_updates(self):
         current_length = len(Img.InspectionData)
@@ -298,7 +444,7 @@ class InnerTab5Content(ctk.CTkFrame):
 
         # Crear los botones dentro del frame
         button_1 = ctk.CTkButton(button_frame, text="Back", command=self.testData)
-        button_2 = ctk.CTkButton(button_frame, text="Next step", command=self.test)
+        button_2 = ctk.CTkButton(button_frame, text="Training", command=self.test)
 
         # Colocar los botones en el frame
         button_1.pack(side="left", padx=5, pady=5)

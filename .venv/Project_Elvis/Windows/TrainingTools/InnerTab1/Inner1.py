@@ -78,7 +78,7 @@ class InnerTab1Content(ctk.CTkFrame):
 
     def CameraFrame(self):
         camera_frame = ctk.CTkFrame(self,fg_color="white",bg_color="white")
-        camera_frame.grid(row=2, column=0, columnspan=2, rowspan=2, sticky="nsew", padx=10, pady=90)
+        camera_frame.grid(row=2, column=0, columnspan=2, rowspan=2,  padx=10, pady=90)
 
         self.LiveFrame = ctk.CTkFrame(camera_frame, border_width=0, width=Img.ImgWidth, height=Img.ImgHeight)
         self.LiveFrame.pack( expand=False)

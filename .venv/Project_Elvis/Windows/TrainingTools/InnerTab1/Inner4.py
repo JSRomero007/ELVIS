@@ -580,7 +580,7 @@ class InnerTab4Content(tk.Frame):
                     axes = (int(abs(x2_real - x1_real) / 2), int(abs(y2_real - y1_real) / 2))
                     cv2.ellipse(mask, center_real, axes, 0, 0, 360, (255), thickness=cv2.FILLED)
 
-                # Colorear el área fuera de la inspección en azul
+                # Colorear el área fuera de la inspección en negro
                 blue_background = np.full_like(result_image_np, (0, 0, 0))  # Black en BGR
                 result_image_np[mask == 0] = blue_background[mask == 0]
 

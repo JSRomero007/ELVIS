@@ -204,6 +204,11 @@ class InnerTab3Content(ctk.CTkFrame):
     def ApplyFilter(self, apply_only=False):
         # Cargar la imagen original para asegurarse de que los filtros anteriores no se apliquen
         self.frame = cv2.imread(self.image_path)
+
+        if self.frame is None:
+            print(f"Error: No se pudo cargar la imagen desde {self.image_path}")
+            return
+
         self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
         self.frame = cv2.resize(self.frame, (self.ImgWid, self.ImgHei), interpolation=cv2.INTER_LINEAR)
 

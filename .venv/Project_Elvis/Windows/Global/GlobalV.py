@@ -4,20 +4,34 @@ import customtkinter as ctk
 
 RunMode : None
 class Img:
+    LoadSavedConfiguration=""
+
     Camera=1
     ImgWidth=920
     ImgHeight=520
-    Master= "C:\\ELVIS\\captured_image.jpg"
-    TempDb="C:\\ELVIS\\TmpDB"
+    TempDb = "C:\\ELVIS\\TmpDB\\" #Windows
+    TempDB = "/ELVIS/TmpDB/"     #Linux
+    InTempCreate=["001_Master", "002_Model", "003_Configuration",]
+    GeneralPath=TempDb
+    Master= GeneralPath+InTempCreate[0]+"\\Master.jpg"
 
-    CutOriginalPicture = "C:\\ELVIS\\NotFilter.jpg"
-    WithFilter="C:\\ELVIS\\WithFilter.jpg"
-    Contorns= "C:\\ELVIS\\Contorns.jpg"
+    CutOriginalPicture = GeneralPath+InTempCreate[0]+"\\NotFilter.jpg"
+    WithFilter=GeneralPath+InTempCreate[0]+"\\WithFilter.jpg"
+    Contorns= GeneralPath+InTempCreate[0]+"\\Contorns.jpg"
+    Model=GeneralPath+InTempCreate[1]
+
+
 
     InspectionData=[] #More relevant
     Inspection=[]
     InspectionArea=[]
-    ThresholdFilter=""
+
+    ThresholdFilter=127
+
+class Calibration:
+    CalibrationX=3
+    CalibrationY=2
+    CalibrationFitler=7
 
 class Inherit:
 

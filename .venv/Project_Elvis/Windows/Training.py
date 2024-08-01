@@ -1,18 +1,39 @@
 from CameraTools import MainCamera
 from TrainingTools import Tab1Content,Tab2Content
-import customtkinter as ctk
 from PIL import Image, ImageTk
 from Global.GlobalV import Img
+import customtkinter as ctk
+import platform, os
 
 class TrainingModelForm(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent)
         self.configure(bg_color="white", fg_color="white")
         self.saved_image_path = Img.Master
-
+        self.MainPathS()
         self.filters = ["Original","GrayScale", "RedVision", "HighlightShadow", "OnlyLines", "FrontLines", "Negative"]
         self.main_camera = None  # Añadir una referencia para MainCamera
         self.MainTabview()
+    def MainPathS(self):
+        if platform.system() == "Windows":
+            base_path = Img.TempDb  # Cambia esto a la ruta base en Windows
+            print('its Windows')
+        else:
+            base_path = "/ELVIS/TmpDB"  # Cambia esto a la ruta base en Linux
+            print('its Linux')
+
+        if not os.path.exists(base_path):
+            os.makedirs(base_path)
+            print(f"Carpeta base '{base_path}' creada.")
+
+        for folder_name in Img.InTempCreate:
+            folder_path = os.path.join(base_path, folder_name)
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+                print(f"Carpeta '{folder_path}' creada.")
+            else:
+                print(f"Carpeta '{folder_path}' ya existe.")
+
 
     def MainTabview(self):
         # Create the Tabview Control
